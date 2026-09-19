@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   Building2,
   UserCog,
+  ShieldCheck,
   Megaphone,
   BarChart3,
   CreditCard,
@@ -58,6 +59,7 @@ const navItems: NavItem[] = [
     icon: CreditCard,
     roles: ["BUSINESS_OWNER", "SUPER_ADMIN"],
   },
+  { to: "/admin", label: "Platform admin", icon: ShieldCheck, roles: ["SUPER_ADMIN"] },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
