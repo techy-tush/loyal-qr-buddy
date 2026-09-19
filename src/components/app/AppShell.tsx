@@ -16,6 +16,7 @@ import {
   CreditCard,
   Settings,
   LifeBuoy,
+  MessageSquare,
   Menu,
   LogOut,
 } from "lucide-react";
