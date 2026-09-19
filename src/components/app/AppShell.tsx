@@ -18,8 +18,6 @@ import {
   LifeBuoy,
   Menu,
   LogOut,
-  ShieldCheck,
-  ScanLine,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
@@ -55,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function Shell({ children }: { children: ReactNode }) {
-  const { business, businesses, setBusinessId, branches, branchId, setBranchId, role, isSuperAdmin, loading } =
+  const { business, businesses, setBusinessId, branches, branchId, setBranchId, role, loading } =
     useBusiness();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
