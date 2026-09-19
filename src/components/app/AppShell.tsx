@@ -48,6 +48,7 @@ const navItems: NavItem[] = [
   { to: "/stamp", label: "Stamp & redeem", icon: Ticket },
   { to: "/rewards", label: "Rewards", icon: Gift },
   { to: "/offers", label: "Offers", icon: Sparkles, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
+  { to: "/scratch-cards", label: "Scratch cards", icon: Ticket, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
   { to: "/staff", label: "Staff", icon: UserCog, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },

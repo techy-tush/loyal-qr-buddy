@@ -274,11 +274,14 @@ export const playScratch = createServerFn({ method: "POST" })
 
     const { data: campaign } = await db
       .from("scratch_campaigns")
-      .select("id, business_id, is_active")
+      .select("id, business_id, is_active, starts_at, ends_at")
       .eq("id", data.campaignId)
       .maybeSingle();
     if (!campaign || campaign.business_id !== customer.business_id || !campaign.is_active)
       throw new Error("This scratch campaign is not available.");
+    const today = new Date().toISOString().slice(0, 10);
+    if ((campaign.starts_at && campaign.starts_at > today) || (campaign.ends_at && campaign.ends_at < today))
+      throw new Error("This scratch campaign is not running right now.");
 
     const { data: existing } = await db
       .from("scratch_wins")
