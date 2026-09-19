@@ -244,7 +244,7 @@ function CampaignsPage() {
       <PageHeader
         title="Campaigns & automation"
         description="Birthday, anniversary, win-back and expiring-reward messages, sent automatically every day."
-        actions={
+        action={
           <div className="flex gap-2">
             <Button
               variant="outline"
