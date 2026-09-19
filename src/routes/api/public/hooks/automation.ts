@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/hooks/automation")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["LOVABLE_CRON_SECRET"];
+        const secret = process.env["AUTOMATION_CRON_SECRET"] ?? process.env["LOVABLE_CRON_SECRET"];
         if (!secret) return new Response("Not configured", { status: 503 });
 
         const provided = (request.headers.get("authorization") ?? "").replace("Bearer ", "");
