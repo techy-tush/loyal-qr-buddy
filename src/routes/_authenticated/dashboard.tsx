@@ -39,7 +39,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("id, action, metadata, created_at")
+        .select("id, action, entity, created_at")
         .eq("business_id", businessId)
         .order("created_at", { ascending: false })
         .limit(12);
