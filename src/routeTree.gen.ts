@@ -27,6 +27,7 @@ import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
+import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerToken'
 import { Route as QrTokenRouteImport } from './routes/qr.$token'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
 
@@ -119,6 +120,11 @@ const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const CardCustomerTokenRoute = CardCustomerTokenRouteImport.update({
+  id: '/card/$customerToken',
+  path: '/card/$customerToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QrTokenRoute = QrTokenRouteImport.update({
   id: '/qr/$token',
   path: '/qr/$token',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/staff': typeof AuthenticatedStaffRoute
+  '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
 }
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/staff': typeof AuthenticatedStaffRoute
+  '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
 }
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
+  '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
 }
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/qr-codes'
     | '/staff'
+    | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
   fileRoutesByTo: FileRoutesByTo
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/qr-codes'
     | '/staff'
+    | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
   id:
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/qr-codes'
     | '/_authenticated/staff'
+    | '/card/$customerToken'
     | '/qr/$token'
     | '/_authenticated/customers/$customerId'
   fileRoutesById: FileRoutesById
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  CardCustomerTokenRoute: typeof CardCustomerTokenRoute
   QrTokenRoute: typeof QrTokenRoute
 }
 
@@ -406,6 +419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStaffRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/card/$customerToken': {
+      id: '/card/$customerToken'
+      path: '/card/$customerToken'
+      fullPath: '/card/$customerToken'
+      preLoaderRoute: typeof CardCustomerTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/qr/$token': {
       id: '/qr/$token'
       path: '/qr/$token'
@@ -473,6 +493,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  CardCustomerTokenRoute: CardCustomerTokenRoute,
   QrTokenRoute: QrTokenRoute,
 }
 export const routeTree = rootRouteImport
