@@ -32,6 +32,7 @@ import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedScratchCardsRouteImport } from './routes/_authenticated/scratch-cards'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStampRouteImport } from './routes/_authenticated/stamp'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
 import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerToken'
 import { Route as QrTokenRouteImport } from './routes/qr.$token'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
@@ -152,6 +153,12 @@ const AuthenticatedStampRoute = AuthenticatedStampRouteImport.update({
   path: '/stamp',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSubscriptionRoute =
+  AuthenticatedSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const CardCustomerTokenRoute = CardCustomerTokenRouteImport.update({
   id: '/card/$customerToken',
   path: '/card/$customerToken',
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -226,6 +234,7 @@ export interface FileRoutesByTo {
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -256,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stamp': typeof AuthenticatedStampRoute
+  '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/scratch-cards'
     | '/staff'
     | '/stamp'
+    | '/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/scratch-cards'
     | '/staff'
     | '/stamp'
+    | '/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
@@ -343,6 +355,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scratch-cards'
     | '/_authenticated/staff'
     | '/_authenticated/stamp'
+    | '/_authenticated/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/_authenticated/customers/$customerId'
@@ -529,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStampRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/card/$customerToken': {
       id: '/card/$customerToken'
       path: '/card/$customerToken'
@@ -588,6 +608,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedScratchCardsRoute: typeof AuthenticatedScratchCardsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStampRoute: typeof AuthenticatedStampRoute
+  AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -603,6 +624,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedScratchCardsRoute: AuthenticatedScratchCardsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStampRoute: AuthenticatedStampRoute,
+  AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
