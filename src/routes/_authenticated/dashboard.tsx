@@ -53,13 +53,6 @@ function DashboardPage() {
       <PageHeader
         title={`Welcome back, ${business!.name}`}
         description="Last 30 days of loyalty activity."
-        action={
-          <Button asChild>
-            <Link to="/qr-codes">
-              <QrCode className="mr-1.5 size-4" /> QR codes
-            </Link>
-          </Button>
-        }
       />
 
       {metrics.isLoading ? (

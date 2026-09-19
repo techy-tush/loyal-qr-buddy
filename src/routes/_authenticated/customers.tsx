@@ -138,11 +138,6 @@ function CustomersPage() {
           icon={Users}
           title="No customers yet"
           description="Share your QR code to get your first customer."
-          action={
-            <Button asChild>
-              <Link to="/qr-codes">Open QR codes</Link>
-            </Button>
-          }
         />
       ) : (
         <div className="surface overflow-x-auto">

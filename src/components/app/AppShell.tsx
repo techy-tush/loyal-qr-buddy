@@ -43,21 +43,7 @@ type NavItem = { to: string; label: string; icon: typeof Users; roles?: string[]
 
 const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/staff-console", label: "Staff console", icon: ScanLine },
   { to: "/customers", label: "Customers", icon: Users },
-  { to: "/loyalty", label: "Loyalty", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/qr-codes", label: "QR codes", icon: QrCode, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/rewards", label: "Rewards", icon: Gift },
-  { to: "/offers", label: "Offers", icon: Ticket, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/scratch-cards", label: "Scratch cards", icon: Sparkles, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/digital-menu", label: "Digital menu", icon: UtensilsCrossed, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
-  { to: "/staff", label: "Staff", icon: UserCog, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
-  { to: "/campaigns", label: "Campaigns", icon: Megaphone, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/subscription", label: "Subscription", icon: CreditCard, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
-  { to: "/settings", label: "Settings", icon: Settings, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/support", label: "Support", icon: LifeBuoy },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -130,14 +116,6 @@ function Shell({ children }: { children: ReactNode }) {
           </Link>
         );
       })}
-      {isSuperAdmin ? (
-        <Link
-          to="/admin"
-          className="mt-2 flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground"
-        >
-          <ShieldCheck className="size-4" /> Platform admin
-        </Link>
-      ) : null}
     </nav>
   );
 
@@ -215,13 +193,6 @@ function Shell({ children }: { children: ReactNode }) {
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                 Signed in as {role?.replace("_", " ").toLowerCase()}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/settings">Business settings</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/subscription">Subscription</Link>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 size-4" /> Sign out
