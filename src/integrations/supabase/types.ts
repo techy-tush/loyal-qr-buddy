@@ -280,6 +280,54 @@ export type Database = {
           },
         ]
       }
+      customer_push_tokens: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          is_active: boolean
+          last_seen_at: string
+          platform: string
+          token: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          platform?: string
+          token: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          platform?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_push_tokens_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_push_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           access_token: string
