@@ -66,6 +66,8 @@ const navItems: NavItem[] = [
     roles: ["BUSINESS_OWNER", "SUPER_ADMIN"],
   },
   { to: "/admin", label: "Platform admin", icon: ShieldCheck, roles: ["SUPER_ADMIN"] },
+  { to: "/security", label: "Security audit", icon: ShieldAlert, roles: ["SUPER_ADMIN"] },
+
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
