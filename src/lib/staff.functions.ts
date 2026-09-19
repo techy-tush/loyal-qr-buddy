@@ -114,5 +114,107 @@ export const findCustomerByPhone = createServerFn({ method: "POST" })
       .eq("phone", data.phone.trim())
       .maybeSingle();
     if (!customer) throw new Error("No customer found with that phone number.");
-    return customer;
+
+    const { data: card } = await context.supabase
+      .from("loyalty_cards")
+      .select("stamps, program:loyalty_programs(name, stamps_required, reward_description)")
+      .eq("customer_id", customer.id)
+      .maybeSingle();
+
+    const { data: rewards } = await context.supabase
+      .from("rewards")
+      .select("id, code, description, expires_at")
+      .eq("customer_id", customer.id)
+      .eq("status", "AVAILABLE")
+      .order("created_at", { ascending: false });
+
+    return { customer, card, rewards: rewards ?? [] };
+  });
+
+/** Manually grant a reward to a customer (owner/manager gesture of goodwill). */
+export const grantReward = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        businessId: z.string().uuid(),
+        customerId: z.string().uuid(),
+        description: z.string().trim().min(2).max(160),
+        expiryDays: z.number().int().min(1).max(365).default(30),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    // RLS-scoped reads prove the caller can administer this business + customer.
+    const { data: admin } = await context.supabase.rpc("is_business_admin", {
+      _business_id: data.businessId,
+    });
+    if (!admin) throw new Error("Only owners and managers can issue rewards.");
+
+    const { data: customer } = await context.supabase
+      .from("customers")
+      .select("id, business_id")
+      .eq("id", data.customerId)
+      .maybeSingle();
+    if (!customer || customer.business_id !== data.businessId)
+      throw new Error("You don't have access to this customer.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: reward, error } = await supabaseAdmin
+      .from("rewards")
+      .insert({
+        business_id: data.businessId,
+        customer_id: customer.id,
+        description: data.description,
+        source: "MANUAL",
+        expires_at: new Date(Date.now() + data.expiryDays * 86400000).toISOString(),
+      })
+      .select("id, code, description")
+      .single();
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      business_id: data.businessId,
+      actor_id: context.userId,
+      action: "REWARD_GRANTED",
+      entity: "reward",
+      entity_id: reward.id,
+      meta: { code: reward.code },
+    });
+
+    return reward;
+  });
+
+/** Cancel an unredeemed reward. */
+export const cancelReward = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ businessId: z.string().uuid(), rewardId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: admin } = await context.supabase.rpc("is_business_admin", {
+      _business_id: data.businessId,
+    });
+    if (!admin) throw new Error("Only owners and managers can cancel rewards.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: updated } = await supabaseAdmin
+      .from("rewards")
+      .update({ status: "CANCELLED" })
+      .eq("id", data.rewardId)
+      .eq("business_id", data.businessId)
+      .eq("status", "AVAILABLE")
+      .select("id")
+      .maybeSingle();
+    if (!updated) throw new Error("This reward can no longer be cancelled.");
+
+    await supabaseAdmin.from("audit_logs").insert({
+      business_id: data.businessId,
+      actor_id: context.userId,
+      action: "REWARD_CANCELLED",
+      entity: "reward",
+      entity_id: data.rewardId,
+      meta: {},
+    });
+    return { ok: true };
   });
