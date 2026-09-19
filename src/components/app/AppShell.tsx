@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   Building2,
   UserCog,
+  ShieldCheck,
   Megaphone,
   BarChart3,
   CreditCard,
