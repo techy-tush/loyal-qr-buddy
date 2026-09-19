@@ -12,6 +12,8 @@ import {
   Building2,
   UserCog,
   ShieldCheck,
+  ShieldAlert,
+
   Megaphone,
   BarChart3,
   CreditCard,
