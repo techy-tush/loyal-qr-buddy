@@ -26,6 +26,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
+import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticated/rewards'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStampRouteImport } from './routes/_authenticated/stamp'
 import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerToken'
@@ -116,6 +117,11 @@ const AuthenticatedQrCodesRoute = AuthenticatedQrCodesRouteImport.update({
   path: '/qr-codes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRewardsRoute = AuthenticatedRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
+  '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
+  '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
+  '/_authenticated/rewards': typeof AuthenticatedRewardsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stamp': typeof AuthenticatedStampRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/onboarding'
     | '/qr-codes'
+    | '/rewards'
     | '/staff'
     | '/stamp'
     | '/card/$customerToken'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/onboarding'
     | '/qr-codes'
+    | '/rewards'
     | '/staff'
     | '/stamp'
     | '/card/$customerToken'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/loyalty'
     | '/_authenticated/onboarding'
     | '/_authenticated/qr-codes'
+    | '/_authenticated/rewards'
     | '/_authenticated/staff'
     | '/_authenticated/stamp'
     | '/card/$customerToken'
@@ -424,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQrCodesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rewards': {
+      id: '/_authenticated/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof AuthenticatedRewardsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/staff': {
       id: '/_authenticated/staff'
       path: '/staff'
@@ -484,6 +503,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedQrCodesRoute: typeof AuthenticatedQrCodesRoute
+  AuthenticatedRewardsRoute: typeof AuthenticatedRewardsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStampRoute: typeof AuthenticatedStampRoute
 }
@@ -495,6 +515,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedQrCodesRoute: AuthenticatedQrCodesRoute,
+  AuthenticatedRewardsRoute: AuthenticatedRewardsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStampRoute: AuthenticatedStampRoute,
 }
