@@ -420,7 +420,18 @@ function OffersPage() {
                   />
                   Live for customers
                 </label>
+                {isAdmin && offer.is_active ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={announce.isPending}
+                    onClick={() => announce.mutate(offer.id)}
+                  >
+                    <Bell className="mr-1.5 size-4" /> Alert customers
+                  </Button>
+                ) : null}
                 {isAdmin ? (
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-muted-foreground">
