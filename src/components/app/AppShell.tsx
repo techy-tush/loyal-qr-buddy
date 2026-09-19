@@ -11,7 +11,6 @@ import {
   UtensilsCrossed,
   Building2,
   UserCog,
-  CreditCard,
   Megaphone,
   BarChart3,
   CreditCard,
