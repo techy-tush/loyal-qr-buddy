@@ -23,6 +23,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
 import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -103,6 +104,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLoyaltyRoute = AuthenticatedLoyaltyRouteImport.update({
   id: '/loyalty',
   path: '/loyalty',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/feedback'
     | '/loyalty'
     | '/offers'
     | '/onboarding'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/feedback'
     | '/loyalty'
     | '/offers'
     | '/onboarding'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/_authenticated/branches'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/feedback'
     | '/_authenticated/loyalty'
     | '/_authenticated/offers'
     | '/_authenticated/onboarding'
@@ -427,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/feedback': {
+      id: '/_authenticated/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof AuthenticatedFeedbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/loyalty': {
       id: '/_authenticated/loyalty'
       path: '/loyalty'
@@ -519,6 +538,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
@@ -532,6 +552,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
