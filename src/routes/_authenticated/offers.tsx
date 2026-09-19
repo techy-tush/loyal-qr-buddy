@@ -102,6 +102,8 @@ function OffersPage() {
   const { business, branches, role } = useBusiness();
   const businessId = business!.id;
   const queryClient = useQueryClient();
+  const announceFn = useServerFn(announceOffer);
+
   const isAdmin = role === "BUSINESS_OWNER" || role === "BUSINESS_MANAGER" || role === "SUPER_ADMIN";
 
   const [open, setOpen] = useState(false);
