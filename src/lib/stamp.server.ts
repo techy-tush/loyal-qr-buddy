@@ -142,6 +142,17 @@ export async function issueStampCore(input: IssueStampInput) {
     meta: { customer_id: customer.id, source: input.source },
   });
 
+  if (rewardCode) {
+    const { sendCustomerPush } = await import("@/lib/push.server");
+    await sendCustomerPush({
+      businessId: input.businessId,
+      customerId: customer.id,
+      title: "Reward unlocked!",
+      body: `${program.reward_description} — show code ${rewardCode} at the counter.`,
+    });
+  }
+
+
   return {
     stamps,
     stampsRequired: program.stamps_required,

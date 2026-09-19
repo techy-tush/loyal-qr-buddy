@@ -2,8 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Sparkles, Trash2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Bell, Plus, Sparkles, Trash2 } from "lucide-react";
+import { announceOffer } from "@/lib/push.functions";
 import { AppShell, EmptyState, PageHeader, StatCard } from "@/components/app/AppShell";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,6 +102,8 @@ function OffersPage() {
   const { business, branches, role } = useBusiness();
   const businessId = business!.id;
   const queryClient = useQueryClient();
+  const announceFn = useServerFn(announceOffer);
+
   const isAdmin = role === "BUSINESS_OWNER" || role === "BUSINESS_MANAGER" || role === "SUPER_ADMIN";
 
   const [open, setOpen] = useState(false);
@@ -185,6 +190,21 @@ function OffersPage() {
     onError: () =>
       toast.error("This offer has been used by customers. Switch it off instead of deleting it."),
   });
+
+  const announce = useMutation({
+    mutationFn: (offerId: string) => announceFn({ data: { businessId: businessId!, offerId } }),
+    onSuccess: (res) => {
+      if (res.skipped) {
+        toast.info("Phone alerts aren't connected yet, so nothing was sent.");
+      } else if (res.sent === 0) {
+        toast.info("No customers have switched on alerts yet.");
+      } else {
+        toast.success(`Alert sent to ${res.sent} customer${res.sent === 1 ? "" : "s"}.`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const list = offers.data ?? [];
   const typeMeta = OFFER_TYPES.find((t) => t.value === form.offer_type)!;
@@ -420,7 +440,18 @@ function OffersPage() {
                   />
                   Live for customers
                 </label>
+                {isAdmin && offer.is_active ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={announce.isPending}
+                    onClick={() => announce.mutate(offer.id)}
+                  >
+                    <Bell className="mr-1.5 size-4" /> Alert customers
+                  </Button>
+                ) : null}
                 {isAdmin ? (
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-muted-foreground">
