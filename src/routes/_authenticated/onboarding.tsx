@@ -123,7 +123,7 @@ function Onboarding() {
       business_id: data.id,
       user_id: auth.user!.id,
       full_name: auth.user!.user_metadata?.["full_name"] ?? "Owner",
-      email: auth.user!.email,
+      email: auth.user!.email ?? null,
       role: "BUSINESS_OWNER",
     });
     setStep(2);

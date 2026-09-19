@@ -245,7 +245,7 @@ export const selfStamp = createServerFn({ method: "POST" })
       .select("stamp_mode")
       .eq("id", customer.business_id)
       .single();
-    if (business.stamp_mode !== "SELF_SCAN")
+    if (!business || business.stamp_mode !== "SELF_SCAN")
       throw new Error("This business requires staff approval for stamps.");
     const { issueStampCore } = await import("@/lib/stamp.server");
     return issueStampCore({
