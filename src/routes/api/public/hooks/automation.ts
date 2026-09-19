@@ -8,11 +8,16 @@ export const Route = createFileRoute("/api/public/hooks/automation")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["AUTOMATION_CRON_SECRET"] ?? process.env["LOVABLE_CRON_SECRET"];
-        if (!secret) return new Response("Not configured", { status: 503 });
+        const accepted = [
+          process.env["AUTOMATION_CRON_TOKEN"],
+          process.env["AUTOMATION_CRON_SECRET"],
+          process.env["LOVABLE_CRON_SECRET"],
+        ].filter((v): v is string => typeof v === "string" && v.length > 0);
+        if (accepted.length === 0) return new Response("Not configured", { status: 503 });
 
         const provided = (request.headers.get("authorization") ?? "").replace("Bearer ", "");
-        if (provided !== secret) return new Response("Unauthorized", { status: 401 });
+        if (!accepted.includes(provided)) return new Response("Unauthorized", { status: 401 });
+
 
         const { runAutomation } = await import("@/lib/automation.server");
         try {
