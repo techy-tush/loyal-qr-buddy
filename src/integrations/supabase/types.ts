@@ -1407,6 +1407,28 @@ export type Database = {
       is_business_admin: { Args: { _business_id: string }; Returns: boolean }
       is_business_member: { Args: { _business_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      security_policy_report: {
+        Args: never
+        Returns: {
+          check_expression: string
+          command: string
+          policy_name: string
+          roles: string
+          table_name: string
+          using_expression: string
+        }[]
+      }
+      security_table_report: {
+        Args: never
+        Returns: {
+          anon_privs: string
+          authenticated_privs: string
+          has_business_id: boolean
+          policy_count: number
+          rls_enabled: boolean
+          table_name: string
+        }[]
+      }
     }
     Enums: {
       audience_type: "ALL" | "NEW" | "REPEAT" | "INACTIVE" | "VIP"
