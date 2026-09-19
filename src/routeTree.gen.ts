@@ -38,6 +38,7 @@ import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerTo
 import { Route as QrTokenRouteImport } from './routes/qr.$token'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
+import { Route as ApiPublicHooksAutomationRouteImport } from './routes/api/public/hooks/automation'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -187,6 +188,12 @@ const ApiPublicRazorpayWebhookRoute =
     path: '/api/public/razorpay-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksAutomationRoute =
+  ApiPublicHooksAutomationRouteImport.update({
+    id: '/api/public/hooks/automation',
+    path: '/api/public/hooks/automation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/hooks/automation': typeof ApiPublicHooksAutomationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -247,6 +255,7 @@ export interface FileRoutesByTo {
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/hooks/automation': typeof ApiPublicHooksAutomationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -279,6 +288,7 @@ export interface FileRoutesById {
   '/qr/$token': typeof QrTokenRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/hooks/automation': typeof ApiPublicHooksAutomationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/qr/$token'
     | '/customers/$customerId'
     | '/api/public/razorpay-webhook'
+    | '/api/public/hooks/automation'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/qr/$token'
     | '/customers/$customerId'
     | '/api/public/razorpay-webhook'
+    | '/api/public/hooks/automation'
   id:
     | '__root__'
     | '/'
@@ -372,6 +384,7 @@ export interface FileRouteTypes {
     | '/qr/$token'
     | '/_authenticated/customers/$customerId'
     | '/api/public/razorpay-webhook'
+    | '/api/public/hooks/automation'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -389,6 +402,7 @@ export interface RootRouteChildren {
   CardCustomerTokenRoute: typeof CardCustomerTokenRoute
   QrTokenRoute: typeof QrTokenRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicHooksAutomationRoute: typeof ApiPublicHooksAutomationRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -596,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/automation': {
+      id: '/api/public/hooks/automation'
+      path: '/api/public/hooks/automation'
+      fullPath: '/api/public/hooks/automation'
+      preLoaderRoute: typeof ApiPublicHooksAutomationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -666,6 +687,7 @@ const rootRouteChildren: RootRouteChildren = {
   CardCustomerTokenRoute: CardCustomerTokenRoute,
   QrTokenRoute: QrTokenRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicHooksAutomationRoute: ApiPublicHooksAutomationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
