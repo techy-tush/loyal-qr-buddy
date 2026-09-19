@@ -186,6 +186,21 @@ function OffersPage() {
       toast.error("This offer has been used by customers. Switch it off instead of deleting it."),
   });
 
+  const announce = useMutation({
+    mutationFn: (offerId: string) => announceFn({ data: { businessId: businessId!, offerId } }),
+    onSuccess: (res) => {
+      if (res.skipped) {
+        toast.info("Phone alerts aren't connected yet, so nothing was sent.");
+      } else if (res.sent === 0) {
+        toast.info("No customers have switched on alerts yet.");
+      } else {
+        toast.success(`Alert sent to ${res.sent} customer${res.sent === 1 ? "" : "s"}.`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const list = offers.data ?? [];
   const typeMeta = OFFER_TYPES.find((t) => t.value === form.offer_type)!;
 
