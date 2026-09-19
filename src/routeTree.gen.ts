@@ -23,7 +23,9 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
+import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
 import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticated/rewards'
@@ -102,9 +104,19 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLoyaltyRoute = AuthenticatedLoyaltyRouteImport.update({
   id: '/loyalty',
   path: '/loyalty',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOffersRoute = AuthenticatedOffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -163,7 +175,9 @@ export interface FileRoutesByFullPath {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/rewards': typeof AuthenticatedRewardsRoute
@@ -187,7 +201,9 @@ export interface FileRoutesByTo {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/rewards': typeof AuthenticatedRewardsRoute
@@ -213,7 +229,9 @@ export interface FileRoutesById {
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
   '/_authenticated/rewards': typeof AuthenticatedRewardsRoute
@@ -239,7 +257,9 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/feedback'
     | '/loyalty'
+    | '/offers'
     | '/onboarding'
     | '/qr-codes'
     | '/rewards'
@@ -263,7 +283,9 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/feedback'
     | '/loyalty'
+    | '/offers'
     | '/onboarding'
     | '/qr-codes'
     | '/rewards'
@@ -288,7 +310,9 @@ export interface FileRouteTypes {
     | '/_authenticated/branches'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/feedback'
     | '/_authenticated/loyalty'
+    | '/_authenticated/offers'
     | '/_authenticated/onboarding'
     | '/_authenticated/qr-codes'
     | '/_authenticated/rewards'
@@ -415,11 +439,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/feedback': {
+      id: '/_authenticated/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof AuthenticatedFeedbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/loyalty': {
       id: '/_authenticated/loyalty'
       path: '/loyalty'
       fullPath: '/loyalty'
       preLoaderRoute: typeof AuthenticatedLoyaltyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/offers': {
+      id: '/_authenticated/offers'
+      path: '/offers'
+      fullPath: '/offers'
+      preLoaderRoute: typeof AuthenticatedOffersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/onboarding': {
@@ -500,7 +538,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
+  AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedQrCodesRoute: typeof AuthenticatedQrCodesRoute
   AuthenticatedRewardsRoute: typeof AuthenticatedRewardsRoute
@@ -512,7 +552,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
+  AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedQrCodesRoute: AuthenticatedQrCodesRoute,
   AuthenticatedRewardsRoute: AuthenticatedRewardsRoute,
