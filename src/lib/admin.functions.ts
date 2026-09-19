@@ -32,7 +32,9 @@ export const getPlatformOverview = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const count = async (table: string, filter?: (q: any) => any) => {
-      let q = supabaseAdmin.from(table).select("id", { count: "exact", head: true });
+      let q: any = (supabaseAdmin as any)
+        .from(table)
+        .select("id", { count: "exact", head: true });
       if (filter) q = filter(q);
       const { count: c } = await q;
       return c ?? 0;
