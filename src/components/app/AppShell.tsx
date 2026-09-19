@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   Building2,
   UserCog,
+  CreditCard,
   Megaphone,
   BarChart3,
   CreditCard,
@@ -52,6 +53,12 @@ const navItems: NavItem[] = [
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
   { to: "/staff", label: "Staff", icon: UserCog, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
+  {
+    to: "/subscription",
+    label: "Subscription",
+    icon: CreditCard,
+    roles: ["BUSINESS_OWNER", "SUPER_ADMIN"],
+  },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
