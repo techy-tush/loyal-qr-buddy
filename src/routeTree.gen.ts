@@ -32,9 +32,11 @@ import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedScratchCardsRouteImport } from './routes/_authenticated/scratch-cards'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStampRouteImport } from './routes/_authenticated/stamp'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
 import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerToken'
 import { Route as QrTokenRouteImport } from './routes/qr.$token'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
+import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -151,6 +153,12 @@ const AuthenticatedStampRoute = AuthenticatedStampRouteImport.update({
   path: '/stamp',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSubscriptionRoute =
+  AuthenticatedSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const CardCustomerTokenRoute = CardCustomerTokenRouteImport.update({
   id: '/card/$customerToken',
   path: '/card/$customerToken',
@@ -166,6 +174,12 @@ const AuthenticatedCustomersCustomerIdRoute =
     id: '/$customerId',
     path: '/$customerId',
     getParentRoute: () => AuthenticatedCustomersRoute,
+  } as any)
+const ApiPublicRazorpayWebhookRoute =
+  ApiPublicRazorpayWebhookRouteImport.update({
+    id: '/api/public/razorpay-webhook',
+    path: '/api/public/razorpay-webhook',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -191,9 +205,11 @@ export interface FileRoutesByFullPath {
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -218,9 +234,11 @@ export interface FileRoutesByTo {
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -247,9 +265,11 @@ export interface FileRoutesById {
   '/_authenticated/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stamp': typeof AuthenticatedStampRoute
+  '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
   '/qr/$token': typeof QrTokenRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -276,9 +296,11 @@ export interface FileRouteTypes {
     | '/scratch-cards'
     | '/staff'
     | '/stamp'
+    | '/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
+    | '/api/public/razorpay-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -303,9 +325,11 @@ export interface FileRouteTypes {
     | '/scratch-cards'
     | '/staff'
     | '/stamp'
+    | '/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/customers/$customerId'
+    | '/api/public/razorpay-webhook'
   id:
     | '__root__'
     | '/'
@@ -331,9 +355,11 @@ export interface FileRouteTypes {
     | '/_authenticated/scratch-cards'
     | '/_authenticated/staff'
     | '/_authenticated/stamp'
+    | '/_authenticated/subscription'
     | '/card/$customerToken'
     | '/qr/$token'
     | '/_authenticated/customers/$customerId'
+    | '/api/public/razorpay-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -350,6 +376,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   CardCustomerTokenRoute: typeof CardCustomerTokenRoute
   QrTokenRoute: typeof QrTokenRoute
+  ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -515,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStampRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/card/$customerToken': {
       id: '/card/$customerToken'
       path: '/card/$customerToken'
@@ -535,6 +569,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/customers/$customerId'
       preLoaderRoute: typeof AuthenticatedCustomersCustomerIdRouteImport
       parentRoute: typeof AuthenticatedCustomersRoute
+    }
+    '/api/public/razorpay-webhook': {
+      id: '/api/public/razorpay-webhook'
+      path: '/api/public/razorpay-webhook'
+      fullPath: '/api/public/razorpay-webhook'
+      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -567,6 +608,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedScratchCardsRoute: typeof AuthenticatedScratchCardsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStampRoute: typeof AuthenticatedStampRoute
+  AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -582,6 +624,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedScratchCardsRoute: AuthenticatedScratchCardsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStampRoute: AuthenticatedStampRoute,
+  AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -601,6 +644,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   CardCustomerTokenRoute: CardCustomerTokenRoute,
   QrTokenRoute: QrTokenRoute,
+  ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
