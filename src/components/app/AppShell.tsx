@@ -42,6 +42,9 @@ type NavItem = { to: string; label: string; icon: typeof Users; roles?: string[]
 const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/loyalty", label: "Loyalty", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
+  { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
+  { to: "/staff", label: "Staff", icon: UserCog, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
