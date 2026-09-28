@@ -79,7 +79,7 @@ const mobileNav: NavItem[] = [
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/rewards", label: "Rewards", icon: Gift },
   { to: "/scratch-cards", label: "Claims", icon: Ticket },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/settings", label: "Settings", icon: Settings, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -262,7 +262,7 @@ function Shell({ children }: { children: ReactNode }) {
         <main className="mx-auto w-full max-w-[1600px] p-4 pb-28 md:p-6 lg:pb-8">{children}</main>
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[76px] grid-cols-5 border-t border-border bg-card/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        {mobileNav.map((item) => {
+        {mobileNav.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => {
           const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
           return (
             <Link
