@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { clearCustomerSession, setCustomerSession } from "@/lib/customer-session";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
@@ -19,6 +20,8 @@ import {
   Clock3,
   CheckCircle2,
   XCircle,
+  LogOut,
+  ChevronRight,
 } from "lucide-react";
 import {
   getCustomerPortal,
@@ -30,6 +33,8 @@ import {
   submitFeedback,
   updateCustomerProfile,
   exploreBusinesses,
+  getMyShops,
+  visitBusiness,
 } from "@/lib/public.functions";
 import { registerPushDevice } from "@/lib/push.functions";
 import { enablePush, pushClientReady } from "@/lib/push-client";
@@ -83,6 +88,10 @@ function CustomerPortal() {
   const registerFn = useServerFn(registerPushDevice);
 
   const [tab, setTab] = useState<TabKey>("card");
+  useEffect(() => {
+    setCustomerSession(customerToken);
+    setTab("card");
+  }, [customerToken]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -218,6 +227,7 @@ function CustomerPortal() {
       <main className="mx-auto w-full max-w-md space-y-4 px-4 pb-28 pt-4">
         {tab === "card" ? (
           <>
+            <MyShops customerToken={customerToken} currentBusinessId={business.id} onExplore={() => setTab("explore")} />
             <div className="surface p-5">
               {card && program ? (
                 <>
@@ -392,7 +402,7 @@ function CustomerPortal() {
           </Section>
         ) : null}
 
-        {tab === "explore" ? <ExplorePanel /> : null}
+        {tab === "explore" ? <ExplorePanel customerToken={customerToken} /> : null}
 
         {tab === "profile" ? <ProfilePanel customerToken={customerToken} phone={customer.phone} /> : null}
       </main>
@@ -538,7 +548,7 @@ function ProfilePanel({ customerToken, phone }: { customerToken: string; phone: 
       <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
         <div className="grid gap-1.5"><Label htmlFor="p-name">Name</Label><Input id="p-name" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
         <div className="grid gap-1.5"><Label>Mobile</Label><Input value={phone} disabled /></div>
-        <div className="grid gap-1.5"><Label htmlFor="p-email">Email (optional)</Label><Input id="p-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="p-email">Email</Label><Input id="p-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5"><Label htmlFor="p-dob">Birthday</Label><Input id="p-dob" type="date" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} /></div>
           <div className="grid gap-1.5"><Label htmlFor="p-ann">Anniversary</Label><Input id="p-ann" type="date" value={form.anniversary} onChange={(e) => setForm({ ...form, anniversary: e.target.value })} /></div>
@@ -549,12 +559,23 @@ function ProfilePanel({ customerToken, phone }: { customerToken: string; phone: 
         </label>
         <Button type="submit" className="h-11" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save profile"}</Button>
       </form>
+      <LogoutButton />
     </Section>
   );
 }
 
-function ExplorePanel() {
+function ExplorePanel({ customerToken }: { customerToken: string }) {
   const exploreFn = useServerFn(exploreBusinesses);
+  const visitFn = useServerFn(visitBusiness);
+  const navigate = useNavigate();
+  const visit = useMutation({
+    mutationFn: (businessId: string) => visitFn({ data: { customerToken, businessId } }),
+    onSuccess: (res) => {
+      toast.success("Shop added to your account.");
+      navigate({ to: "/card/$customerToken", params: { customerToken: res.customerToken } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [q, setQ] = useState("");
   const [city, setCity] = useState("");
   const [debounced, setDebounced] = useState({ q: "", city: "" });
@@ -605,6 +626,7 @@ function ExplorePanel() {
               <p className="truncate text-xs text-muted-foreground">{[b.category, b.city].filter(Boolean).join(" · ")}</p>
               {b.address ? <p className="truncate text-xs text-muted-foreground">{b.address}</p> : null}
             </div>
+            <Button size="sm" disabled={visit.isPending} onClick={() => visit.mutate(b.id)}>Visit</Button>
             {b.address || b.city ? (
               <Button asChild size="sm" variant="outline">
                 <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([b.name, b.address, b.city].filter(Boolean).join(", "))}`} target="_blank" rel="noreferrer">Map</a>
@@ -612,6 +634,67 @@ function ExplorePanel() {
             ) : null}
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+function LogoutButton() {
+  const navigate = useNavigate();
+  return (
+    <Button
+      variant="outline"
+      className="mt-4 h-11 w-full text-destructive"
+      onClick={() => {
+        clearCustomerSession();
+        toast.success("Logged out.");
+        navigate({ to: "/" });
+      }}
+    >
+      <LogOut className="size-4" /> Log out
+    </Button>
+  );
+}
+
+function MyShops({ customerToken, currentBusinessId, onExplore }: { customerToken: string; currentBusinessId: string; onExplore: () => void }) {
+  const shopsFn = useServerFn(getMyShops);
+  const shops = useQuery({ queryKey: ["my-shops", customerToken], queryFn: () => shopsFn({ data: { customerToken } }) });
+  const list = shops.data ?? [];
+  return (
+    <div className="surface p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-display text-base font-bold">My shops ({list.length})</p>
+        <button type="button" onClick={onExplore} className="text-xs font-semibold text-primary">+ Visit more</button>
+      </div>
+      {shops.isLoading ? (
+        <Skeleton className="h-16 w-full rounded-xl" />
+      ) : (
+        <div className="space-y-2">
+          {list.map((s) => {
+            const current = s.businessId === currentBusinessId;
+            return (
+              <Link
+                key={s.businessId}
+                to="/card/$customerToken"
+                params={{ customerToken: s.token }}
+                className={cn("flex items-center gap-3 rounded-xl border p-3", current ? "border-primary bg-accent/60" : "border-border bg-card")}
+              >
+                {s.logo_url ? (
+                  <img src={s.logo_url} alt={s.name} className="size-10 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-primary"><Store className="size-4" /></span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{s.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {s.visits} visits{s.offers ? ` · ${s.offers} offers` : ""}{s.rewards ? ` · ${s.rewards} rewards` : ""}
+                  </p>
+                </div>
+                {current ? <Badge>Here</Badge> : <ChevronRight className="size-4 text-muted-foreground" />}
+              </Link>
+            );
+          })}
+        </div>
       )}
     </div>
   );

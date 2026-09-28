@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCustomerSession, setCustomerSession } from "@/lib/customer-session";
 import { toast } from "sonner";
 import { Gift, Sparkles, Store } from "lucide-react";
-import { getQrLanding, joinLoyalty } from "@/lib/public.functions";
+import { getQrLanding, joinLoyalty, visitBusiness } from "@/lib/public.functions";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +37,9 @@ function QrLandingPage() {
   const navigate = useNavigate();
   const landingFn = useServerFn(getQrLanding);
   const joinFn = useServerFn(joinLoyalty);
+  const visitFn = useServerFn(visitBusiness);
+  const [session, setSession] = useState<string | null>(null);
+  useEffect(() => setSession(getCustomerSession()), []);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
@@ -54,10 +58,23 @@ function QrLandingPage() {
   const join = useMutation({
     mutationFn: () => joinFn({ data: { ...form, token } }),
     onSuccess: (res) => {
+      setCustomerSession(res.customerToken);
       toast.success("You're in! Here's your loyalty card.");
       navigate({ to: "/card/$customerToken", params: { customerToken: res.customerToken } });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const quickVisit = useMutation({
+    mutationFn: (businessId: string) => visitFn({ data: { customerToken: session ?? "", businessId } }),
+    onSuccess: (res) => {
+      setCustomerSession(res.customerToken);
+      navigate({ to: "/card/$customerToken", params: { customerToken: res.customerToken } });
+    },
+    onError: () => {
+      setSession(null);
+      toast.error("Please enter your mobile number to continue.");
+    },
   });
 
   if (landing.isLoading) {
@@ -134,9 +151,16 @@ function QrLandingPage() {
             </div>
           ) : null}
 
-          {!showForm ? (
+          {session && !showForm ? (
+            <div className="grid gap-2">
+              <Button className="w-full" size="lg" disabled={quickVisit.isPending} onClick={() => quickVisit.mutate(business.id)}>
+                {quickVisit.isPending ? "Opening…" : "Visit here"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowForm(true)}>Use a different mobile number</Button>
+            </div>
+          ) : !showForm ? (
             <Button className="w-full" size="lg" onClick={() => setShowForm(true)}>
-              Join loyalty program
+              Visit here
             </Button>
           ) : (
             <form
@@ -147,15 +171,6 @@ function QrLandingPage() {
               }}
             >
               <div className="grid gap-1.5">
-                <Label htmlFor="name">Your name</Label>
-                <Input
-                  id="name"
-                  required
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-1.5">
                 <Label htmlFor="phone">Mobile number</Label>
                 <Input
                   id="phone"
@@ -165,26 +180,6 @@ function QrLandingPage() {
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dob">Birthday (optional)</Label>
-                  <Input
-                    id="dob"
-                    type="date"
-                    value={form.dob}
-                    onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="anniversary">Anniversary (optional)</Label>
-                  <Input
-                    id="anniversary"
-                    type="date"
-                    value={form.anniversary}
-                    onChange={(e) => setForm({ ...form, anniversary: e.target.value })}
-                  />
-                </div>
-              </div>
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Checkbox
                   checked={form.marketing_consent}
@@ -193,7 +188,7 @@ function QrLandingPage() {
                 Send me offers, birthday treats and reward reminders.
               </label>
               <Button type="submit" size="lg" disabled={join.isPending}>
-                {join.isPending ? "Creating your card…" : "Get my loyalty card"}
+                {join.isPending ? "Creating your card…" : "Continue"}
               </Button>
             </form>
           )}
