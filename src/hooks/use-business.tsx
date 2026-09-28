@@ -16,6 +16,8 @@ export type Business = {
   google_review_url: string | null;
   instagram_url: string | null;
   whatsapp_number: string | null;
+  facebook_url: string | null;
+  google_maps_url: string | null;
   stamp_cooldown_minutes: number;
   daily_stamp_limit: number;
   location_validation: boolean;
