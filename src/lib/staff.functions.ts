@@ -218,3 +218,51 @@ export const cancelReward = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/** Owner/manager approves or rejects a customer's visit request. */
+export const decideVisit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ requestId: z.string().uuid(), approve: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    // RLS: only business admins can read the request.
+    const { data: req } = await context.supabase
+      .from("visit_requests")
+      .select("id, business_id, customer_id, branch_id, status")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (!req) throw new Error("Request not found.");
+    if (req.status !== "PENDING") throw new Error("This request was already handled.");
+
+    const { error } = await context.supabase
+      .from("visit_requests")
+      .update({
+        status: data.approve ? "APPROVED" : "REJECTED",
+        decided_by: context.userId,
+        decided_at: new Date().toISOString(),
+      })
+      .eq("id", req.id)
+      .eq("status", "PENDING");
+    if (error) throw new Error(error.message);
+
+    if (!data.approve) return { approved: false, rewardUnlocked: false, rewardCode: null };
+    const { issueStampCore } = await import("@/lib/stamp.server");
+    try {
+      const res = await issueStampCore({
+        customerId: req.customer_id,
+        businessId: req.business_id,
+        branchId: req.branch_id,
+        source: "STAFF",
+        actorId: context.userId,
+      });
+      return { approved: true, rewardUnlocked: res.rewardUnlocked, rewardCode: res.rewardCode };
+    } catch (e) {
+      // Roll back the approval so the owner can retry later.
+      await context.supabase
+        .from("visit_requests")
+        .update({ status: "PENDING", decided_by: null, decided_at: null })
+        .eq("id", req.id);
+      throw e;
+    }
+  });
