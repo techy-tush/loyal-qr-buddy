@@ -473,3 +473,99 @@ function Page({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+function VisitRequestPanel({ customerToken, onDecided }: { customerToken: string; onDecided: () => void }) {
+  const statusFn = useServerFn(getVisitStatus);
+  const requestFn = useServerFn(requestVisit);
+  const queryClient = useQueryClient();
+  const status = useQuery({
+    queryKey: ["visit-status", customerToken],
+    queryFn: () => statusFn({ data: { customerToken } }),
+    refetchInterval: (q) => (q.state.data?.status === "PENDING" ? 5000 : false),
+  });
+  const last = status.data;
+  const [seenDecision, setSeenDecision] = useState<string | null>(null);
+  useEffect(() => {
+    if (last && last.status !== "PENDING" && last.id !== seenDecision) {
+      setSeenDecision(last.id);
+      onDecided();
+    }
+  }, [last, seenDecision, onDecided]);
+  const send = useMutation({
+    mutationFn: () => requestFn({ data: { customerToken } }),
+    onSuccess: () => {
+      toast.success("Request sent — the shop owner will approve it.");
+      queryClient.invalidateQueries({ queryKey: ["visit-status", customerToken] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const recent = last && Date.now() - new Date(last.decided_at ?? last.created_at).getTime() < 6 * 3600000;
+
+  if (last?.status === "PENDING")
+    return (
+      <p className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-accent/60 p-3 text-sm font-semibold">
+        <Clock3 className="size-4 text-primary" /> Waiting for owner approval…
+      </p>
+    );
+  return (
+    <div className="mt-5 space-y-3">
+      {recent && last?.status === "APPROVED" ? (
+        <p className="flex items-center justify-center gap-2 rounded-xl bg-accent/60 p-3 text-sm font-semibold text-primary">
+          <CheckCircle2 className="size-4" /> Your last visit was approved
+        </p>
+      ) : null}
+      {recent && last?.status === "REJECTED" ? (
+        <p className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+          <XCircle className="size-4" /> Your last request was rejected
+        </p>
+      ) : null}
+      <Button className="h-12 w-full text-base" onClick={() => send.mutate()} disabled={send.isPending}>
+        {send.isPending ? "Sending…" : "I'm here — request visit"}
+      </Button>
+    </div>
+  );
+}
+
+function ProfilePanel({ customerToken, phone }: { customerToken: string; phone: string }) {
+  const getFn = useServerFn(getCustomerProfile);
+  const saveFn = useServerFn(updateCustomerProfile);
+  const profile = useQuery({
+    queryKey: ["customer-profile", customerToken],
+    queryFn: () => getFn({ data: { customerToken } }),
+  });
+  const [form, setForm] = useState({ full_name: "", email: "", dob: "", anniversary: "", marketing_consent: false });
+  useEffect(() => {
+    if (!profile.data) return;
+    setForm({
+      full_name: profile.data.full_name,
+      email: profile.data.email ?? "",
+      dob: profile.data.dob ?? "",
+      anniversary: profile.data.anniversary ?? "",
+      marketing_consent: profile.data.marketing_consent,
+    });
+  }, [profile.data]);
+  const save = useMutation({
+    mutationFn: () => saveFn({ data: { customerToken, ...form } }),
+    onSuccess: () => toast.success("Profile saved."),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  if (profile.isLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
+  return (
+    <Section title="My profile" icon={UserRound}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+        <div className="grid gap-1.5"><Label htmlFor="p-name">Name</Label><Input id="p-name" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+        <div className="grid gap-1.5"><Label>Mobile</Label><Input value={phone} disabled /></div>
+        <div className="grid gap-1.5"><Label htmlFor="p-email">Email (optional)</Label><Input id="p-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-1.5"><Label htmlFor="p-dob">Birthday</Label><Input id="p-dob" type="date" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="p-ann">Anniversary</Label><Input id="p-ann" type="date" value={form.anniversary} onChange={(e) => setForm({ ...form, anniversary: e.target.value })} /></div>
+        </div>
+        <label className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Checkbox checked={form.marketing_consent} onCheckedChange={(v) => setForm({ ...form, marketing_consent: Boolean(v) })} />
+          Send me offers and reward reminders.
+        </label>
+        <Button type="submit" className="h-11" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save profile"}</Button>
+      </form>
+    </Section>
+  );
+}
