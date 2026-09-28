@@ -78,7 +78,7 @@ function daysLeft(iso: string | null) {
 function SubscriptionPage() {
   const { business, role } = useBusiness();
   const qc = useQueryClient();
-  const [cycle, setCycle] = useState<Cycle>("MONTHLY");
+  const cycle: Cycle = "YEARLY";
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const isOwner = role === "BUSINESS_OWNER" || role === "SUPER_ADMIN";
 
@@ -107,7 +107,7 @@ function SubscriptionPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("plans")
-        .select("id, code, name, price_monthly, price_yearly, max_branches, features, sort_order")
+        .select("id, code, name, price_monthly, price_yearly, original_price_yearly, max_branches, features, sort_order")
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
@@ -256,31 +256,18 @@ function SubscriptionPage() {
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Plans</h2>
-        <div className="inline-flex rounded-xl border border-border bg-card p-1">
-          {(["MONTHLY", "YEARLY"] as Cycle[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCycle(c)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                cycle === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              {c === "MONTHLY" ? "Monthly" : "Yearly"}
-            </button>
-          ))}
-        </div>
+        <Badge variant="secondary">Limited-time yearly offer</Badge>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         {plansQuery.isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
+          ? Array.from({ length: 2 }).map((_, i) => (
               <Skeleton key={i} className="h-72 w-full rounded-2xl" />
             ))
           : plansQuery.data?.map((plan) => {
               const isCurrent = currentPlan?.id === plan.id;
-              const price = cycle === "YEARLY" ? Number(plan.price_yearly) : Number(plan.price_monthly);
+              const price = Number(plan.price_yearly);
+              const original = Number((plan as { original_price_yearly?: number | null }).original_price_yearly ?? 0);
               const enterprise = plan.code === "ENTERPRISE";
               const features = Array.isArray(plan.features) ? (plan.features as string[]) : [];
               return (
@@ -293,16 +280,11 @@ function SubscriptionPage() {
                     {isCurrent ? <Badge variant="secondary">Current</Badge> : null}
                   </div>
                   <p className="mt-3 text-3xl font-extrabold">
-                    {enterprise || price <= 0 ? (
-                      "Custom"
-                    ) : (
-                      <>
-                        {inr(price)}
-                        <span className="text-sm font-medium text-muted-foreground">
-                          /{cycle === "YEARLY" ? "year" : "month"}
-                        </span>
-                      </>
-                    )}
+                    {original > price ? (
+                      <span className="mr-2 text-lg font-semibold text-muted-foreground line-through">{inr(original)}</span>
+                    ) : null}
+                    {inr(price)}
+                    <span className="text-sm font-medium text-muted-foreground">/year</span>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {plan.max_branches >= 999 ? "Unlimited branches" : `${plan.max_branches} branch${plan.max_branches === 1 ? "" : "es"}`}
