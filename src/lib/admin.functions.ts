@@ -468,3 +468,36 @@ export const decideUpiPayment = createServerFn({ method: "POST" })
     else if (p.plan_id) await db.from("subscriptions").insert({ business_id: p.business_id, plan_id: p.plan_id, ...patch });
     return { ok: true };
   });
+
+/** Full detail of one business for the platform admin: counts, offers, customers. */
+export const getBusinessDetailAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ businessId: z.string().uuid(), search: z.string().trim().max(60).default("") }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase);
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const id = data.businessId;
+    const c = (t: "customers" | "offers" | "rewards" | "qr_scans" | "branches" | "visit_requests" | "offer_redemptions") =>
+      db.from(t).select("id", { count: "exact", head: true }).eq("business_id", id);
+    const s = data.search.replace(/[%,()*]/g, " ").trim();
+    let cq = db.from("customers")
+      .select("id, full_name, phone, email, total_visits, last_visit_at, access_token, created_at")
+      .eq("business_id", id).order("last_visit_at", { ascending: false, nullsFirst: false }).limit(100);
+    if (s) cq = cq.or(`full_name.ilike.%${s}%,phone.ilike.%${s}%`);
+    const [biz, customers, offers, rewards, scans, branches, visits, redemptions, offerRows, customerRows] = await Promise.all([
+      db.from("businesses").select("*").eq("id", id).single(),
+      c("customers"), c("offers"), c("rewards"), c("qr_scans"), c("branches"), c("visit_requests"), c("offer_redemptions"),
+      db.from("offers").select("id, title, offer_type, discount_value, is_active, starts_at, ends_at").eq("business_id", id).order("created_at", { ascending: false }),
+      cq,
+    ]);
+    if (biz.error) throw new Error("Business not found.");
+    return {
+      business: biz.data,
+      counts: {
+        customers: customers.count ?? 0, offers: offers.count ?? 0, rewards: rewards.count ?? 0, scans: scans.count ?? 0,
+        branches: branches.count ?? 0, visits: visits.count ?? 0, redemptions: redemptions.count ?? 0,
+      },
+      offers: offerRows.data ?? [],
+      customers: customerRows.data ?? [],
+    };
+  });

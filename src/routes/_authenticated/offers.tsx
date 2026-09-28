@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, Plus, Sparkles, Trash2 } from "lucide-react";
 import { announceOffer } from "@/lib/push.functions";
+import { redeemOffer } from "@/lib/staff.functions";
 import { AppShell, EmptyState, PageHeader, StatCard } from "@/components/app/AppShell";
 
 import { Badge } from "@/components/ui/badge";
@@ -438,6 +439,7 @@ function OffersPage() {
                   />
                   Live for customers
                 </label>
+                {offer.is_active ? <RedeemOfferButton offerId={offer.id} title={offer.title} /> : null}
                 {isAdmin && offer.is_active ? (
                   <Button
                     variant="outline"
@@ -478,5 +480,44 @@ function OffersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function RedeemOfferButton({ offerId, title }: { offerId: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const qc = useQueryClient();
+  const fn = useServerFn(redeemOffer);
+  const m = useMutation({
+    mutationFn: () => fn({ data: { offerId, phone } }),
+    onSuccess: (r) => {
+      toast.success(`${r.title} redeemed for ${r.customerName}`);
+      setOpen(false);
+      setPhone("");
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">Redeem</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Redeem “{title}”</DialogTitle>
+          <DialogDescription>Enter the customer’s mobile number. Each customer can use an offer once.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-1.5">
+          <Label htmlFor="redeem-phone">Customer mobile number</Label>
+          <Input id="redeem-phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98XXXXXXXX" />
+        </div>
+        <DialogFooter>
+          <Button disabled={phone.trim().length < 6 || m.isPending} onClick={() => m.mutate()}>
+            {m.isPending ? "Checking…" : "Confirm redeem"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

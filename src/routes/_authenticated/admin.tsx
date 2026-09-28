@@ -44,6 +44,7 @@ import {
   getPlatformOverview,
   isPlatformAdmin,
   listBusinessesAdmin,
+  getBusinessDetailAdmin,
   listPaymentsAdmin,
   decideUpiPayment,
   saveUpiSettings,
@@ -57,6 +58,8 @@ import {
   setSuperAdmin,
 } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
+import { useBusiness } from "@/hooks/use-business";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -273,6 +276,7 @@ function Pager({
 }
 
 function BusinessesTab() {
+  const [detailId, setDetailId] = useState<string | null>(null);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -370,6 +374,9 @@ function BusinessesTab() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setDetailId(b.id)}>
+                          Open
+                        </Button>
                         {b.status === "SUSPENDED" ? (
                           <Button
                             size="sm"
@@ -412,6 +419,7 @@ function BusinessesTab() {
         </>
       )}
 
+      <BusinessDetailDialog id={detailId} onClose={() => setDetailId(null)} />
       <Dialog open={Boolean(planTarget)} onOpenChange={(o) => !o && setPlanTarget(null)}>
         <DialogContent>
           <DialogHeader>
@@ -947,5 +955,96 @@ function UpiSettingsCard() {
       <div className="space-y-1.5"><Label htmlFor="upi-payee">Name shown to payer</Label><Input id="upi-payee" value={payee} onChange={(e) => setPayee(e.target.value)} /></div>
       <Button type="submit" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save UPI"}</Button>
     </form>
+  );
+}
+
+function BusinessDetailDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const fn = useServerFn(getBusinessDetailAdmin);
+  const [search, setSearch] = useState("");
+  const { setBusinessId } = useBusiness();
+  const navigate = useNavigate();
+  const q = useQuery({
+    queryKey: ["admin-business-detail", id, search],
+    enabled: Boolean(id),
+    queryFn: () => fn({ data: { businessId: id!, search } }),
+  });
+  const d = q.data;
+  const b = d?.business;
+  return (
+    <Dialog open={Boolean(id)} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{b?.name ?? "Business"}</DialogTitle>
+          <DialogDescription>
+            {[b?.category, b?.address, b?.city, b?.phone, b?.email].filter(Boolean).join(" · ") || "—"}
+          </DialogDescription>
+        </DialogHeader>
+        {q.isLoading || !d ? (
+          <Skeleton className="h-60" />
+        ) : (
+          <div className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => {
+                  setBusinessId(id!);
+                  onClose();
+                  navigate({ to: "/dashboard" });
+                }}
+              >
+                Log in as business owner
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {([
+                ["Customers", d.counts.customers], ["Offers", d.counts.offers], ["Offer uses", d.counts.redemptions],
+                ["Rewards", d.counts.rewards], ["QR scans", d.counts.scans], ["Visit requests", d.counts.visits],
+                ["Branches", d.counts.branches],
+              ] as const).map(([l, v]) => (
+                <div key={l} className="rounded-xl border border-border p-3">
+                  <p className="text-xl font-extrabold">{v}</p>
+                  <p className="text-xs text-muted-foreground">{l}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Offers</h3>
+              {d.offers.length === 0 ? <p className="text-sm text-muted-foreground">No offers.</p> : (
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {d.offers.map((o) => (
+                    <li key={o.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                      <span className="font-medium">{o.title}</span>
+                      <Badge variant="outline">{o.is_active ? "Live" : "Off"}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Customers</h3>
+                <Input className="h-8 max-w-48" placeholder="Search name / phone" value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              {d.customers.length === 0 ? <p className="text-sm text-muted-foreground">No customers.</p> : (
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {d.customers.map((c) => (
+                    <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">{c.full_name}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {c.phone}{c.email ? ` · ${c.email}` : ""} · {c.total_visits} visits · last {c.last_visit_at ? new Date(c.last_visit_at).toLocaleDateString() : "—"}
+                        </span>
+                      </span>
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={`/card/${c.access_token}`} target="_blank" rel="noreferrer">Open as customer</a>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -155,12 +155,7 @@ export const joinLoyalty = createServerFn({ method: "POST" })
       }
     }
 
-    await db.from("qr_scans").insert({
-      business_id: qr.business_id,
-      qr_id: qr.id,
-      branch_id: qr.branch_id,
-      customer_id: customerId,
-    });
+    // The scan itself was already counted when the QR page opened — don't count it twice.
 
     return { customerToken: accessToken! };
   });
@@ -184,7 +179,7 @@ export const getCustomerPortal = createServerFn({ method: "GET" })
       await Promise.all([
         db
           .from("businesses")
-          .select("id, name, slug, logo_url, google_review_url, instagram_url, whatsapp_number, stamp_mode")
+          .select("id, name, slug, logo_url, category, address, city, phone, google_review_url, instagram_url, whatsapp_number, facebook_url, google_maps_url, stamp_mode")
           .eq("id", customer.business_id)
           .single(),
         db

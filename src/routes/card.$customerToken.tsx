@@ -22,6 +22,8 @@ import {
   XCircle,
   LogOut,
   ChevronRight,
+  Facebook,
+  Phone,
 } from "lucide-react";
 import {
   getCustomerPortal,
@@ -228,6 +230,7 @@ function CustomerPortal() {
         {tab === "card" ? (
           <>
             <MyShops customerToken={customerToken} currentBusinessId={business.id} onExplore={() => setTab("explore")} />
+            <ShopProfile business={business} offers={offers} onOffers={() => setTab("offers")} />
             <div className="surface p-5">
               {card && program ? (
                 <>
@@ -696,6 +699,55 @@ function MyShops({ customerToken, currentBusinessId, onExplore }: { customerToke
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function ShopProfile({
+  business,
+  offers,
+  onOffers,
+}: {
+  business: { name: string; category?: string | null; address?: string | null; city?: string | null; phone?: string | null; google_review_url: string | null; instagram_url: string | null; whatsapp_number: string | null; facebook_url?: string | null; google_maps_url?: string | null };
+  offers: { id: string; title: string; description: string | null }[];
+  onOffers: () => void;
+}) {
+  const mapsUrl =
+    business.google_maps_url ||
+    (business.address || business.city
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.name} ${business.address ?? ""} ${business.city ?? ""}`)}`
+      : null);
+  const links = [
+    mapsUrl ? { href: mapsUrl, label: "Location", icon: MapPin } : null,
+    business.instagram_url ? { href: business.instagram_url, label: "Instagram", icon: Instagram } : null,
+    business.facebook_url ? { href: business.facebook_url, label: "Facebook", icon: Facebook } : null,
+    business.whatsapp_number ? { href: `https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}`, label: "WhatsApp", icon: MessageCircle } : null,
+    business.google_review_url ? { href: business.google_review_url, label: "Review", icon: Star } : null,
+    business.phone ? { href: `tel:${business.phone}`, label: "Call", icon: Phone } : null,
+  ].filter(Boolean) as { href: string; label: string; icon: typeof MapPin }[];
+  return (
+    <div className="surface p-5">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">Shop profile</p>
+      <p className="mt-1 font-display text-lg font-bold">{business.name}</p>
+      {business.category || business.city ? (
+        <p className="text-xs text-muted-foreground">{[business.category, business.address, business.city].filter(Boolean).join(" · ")}</p>
+      ) : null}
+      {links.length ? (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {links.map((l) => (
+            <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-xs font-semibold transition hover:bg-accent">
+              <span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><l.icon className="size-5" /></span>
+              {l.label}
+            </a>
+          ))}
+        </div>
+      ) : null}
+      {offers.length ? (
+        <button type="button" onClick={onOffers} className="mt-4 w-full rounded-xl bg-accent p-3 text-left">
+          <p className="text-sm font-semibold">{offers.length} offer{offers.length > 1 ? "s" : ""} running</p>
+          <p className="truncate text-xs text-muted-foreground">{offers.map((o) => o.title).join(" · ")}</p>
+        </button>
+      ) : null}
     </div>
   );
 }

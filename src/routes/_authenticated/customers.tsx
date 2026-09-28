@@ -158,7 +158,24 @@ function CustomersPage() {
           description="Share your QR code to get your first customer."
         />
       ) : (
-        <div className="surface overflow-x-auto">
+        <>
+        <ul className="surface divide-y divide-border md:hidden">
+          {rows.map((c) => (
+            <li key={c.id}>
+              <Link to="/customers/$customerId" params={{ customerId: c.id }} className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{c.full_name}</span>
+                  <span className="block text-sm text-muted-foreground">{c.phone}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Last visit: {c.last_visit_at ? new Date(c.last_visit_at).toLocaleDateString() : "—"}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-primary">View →</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="surface hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -194,6 +211,7 @@ function CustomersPage() {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       {total > PAGE_SIZE ? (

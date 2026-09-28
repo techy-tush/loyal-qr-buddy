@@ -160,6 +160,8 @@ export type Database = {
           created_at: string
           daily_stamp_limit: number
           email: string | null
+          facebook_url: string | null
+          google_maps_url: string | null
           google_review_url: string | null
           id: string
           instagram_url: string | null
@@ -186,6 +188,8 @@ export type Database = {
           created_at?: string
           daily_stamp_limit?: number
           email?: string | null
+          facebook_url?: string | null
+          google_maps_url?: string | null
           google_review_url?: string | null
           id?: string
           instagram_url?: string | null
@@ -212,6 +216,8 @@ export type Database = {
           created_at?: string
           daily_stamp_limit?: number
           email?: string | null
+          facebook_url?: string | null
+          google_maps_url?: string | null
           google_review_url?: string | null
           id?: string
           instagram_url?: string | null
@@ -883,6 +889,7 @@ export type Database = {
           is_active: boolean
           max_branches: number
           name: string
+          original_price_yearly: number | null
           price_monthly: number
           price_yearly: number
           sort_order: number
@@ -895,6 +902,7 @@ export type Database = {
           is_active?: boolean
           max_branches?: number
           name: string
+          original_price_yearly?: number | null
           price_monthly?: number
           price_yearly?: number
           sort_order?: number
@@ -907,6 +915,7 @@ export type Database = {
           is_active?: boolean
           max_branches?: number
           name?: string
+          original_price_yearly?: number | null
           price_monthly?: number
           price_yearly?: number
           sort_order?: number

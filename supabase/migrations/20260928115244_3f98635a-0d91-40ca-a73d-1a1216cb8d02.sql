@@ -1,0 +1,2 @@
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS facebook_url text, ADD COLUMN IF NOT EXISTS google_maps_url text;
+ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS original_price_yearly numeric;
