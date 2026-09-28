@@ -334,7 +334,7 @@ export const listPaymentsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, amount, currency, provider, status, invoice_number, created_at, businesses(id, name)",
+        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, businesses(id, name), plans(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })

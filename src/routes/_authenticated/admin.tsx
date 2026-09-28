@@ -45,6 +45,8 @@ import {
   isPlatformAdmin,
   listBusinessesAdmin,
   listPaymentsAdmin,
+  decideUpiPayment,
+  saveUpiSettings,
   listPlansAdmin,
   listSubscriptionsAdmin,
   listTicketsAdmin,
@@ -722,7 +724,17 @@ function SubscriptionsTab() {
 
 function PaymentsTab() {
   const [page, setPage] = useState(0);
+  const qc = useQueryClient();
   const list = useServerFn(listPaymentsAdmin);
+  const decideFn = useServerFn(decideUpiPayment);
+  const decide = useMutation({
+    mutationFn: (v: { paymentId: string; approve: boolean }) => decideFn({ data: v }),
+    onSuccess: (_r, v) => {
+      toast.success(v.approve ? "Payment confirmed — plan activated." : "Payment rejected.");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const q = useQuery({
     queryKey: ["admin-payments", page],
     queryFn: () => list({ data: { search: "", page } }),
@@ -731,15 +743,19 @@ function PaymentsTab() {
   if (q.isLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
   if ((q.data?.rows.length ?? 0) === 0)
     return (
+      <>
+      <UpiSettingsCard />
       <EmptyState
         icon={IndianRupee}
         title="No payments yet"
         description="Plan payments made by businesses will be listed here."
       />
+      </>
     );
 
   return (
     <>
+      <UpiSettingsCard />
       <div className="surface overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
@@ -748,7 +764,9 @@ function PaymentsTab() {
               <th className="px-4 py-3 font-medium">Business</th>
               <th className="px-4 py-3 font-medium">Invoice</th>
               <th className="px-4 py-3 font-medium">Amount</th>
+              <th className="px-4 py-3 font-medium">Plan / UTR</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -758,6 +776,10 @@ function PaymentsTab() {
                 <td className="px-4 py-3 font-semibold">{p.businesses?.name ?? "—"}</td>
                 <td className="px-4 py-3 font-mono text-xs">{p.invoice_number ?? "—"}</td>
                 <td className="px-4 py-3">{inr(Number(p.amount))}</td>
+                <td className="px-4 py-3 text-xs">
+                  <p>{p.plans?.name ?? "—"} · {p.provider}</p>
+                  <p className="font-mono text-muted-foreground">{p.provider_ref ?? "no UTR yet"}</p>
+                </td>
                 <td className="px-4 py-3">
                   <Badge
                     variant="outline"
@@ -768,6 +790,14 @@ function PaymentsTab() {
                   >
                     {p.status === "SUCCESS" ? "paid" : p.status.toLowerCase()}
                   </Badge>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {p.status === "PENDING" && p.provider === "upi" ? (
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => decide.mutate({ paymentId: p.id, approve: false })}>Reject</Button>
+                      <Button size="sm" disabled={decide.isPending} onClick={() => decide.mutate({ paymentId: p.id, approve: true })}>Confirm paid</Button>
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             ))}
@@ -886,5 +916,36 @@ function SupportTab() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function UpiSettingsCard() {
+  const saveFn = useServerFn(saveUpiSettings);
+  const [upiId, setUpiId] = useState("");
+  const [payee, setPayee] = useState("Digital Udyam");
+  const current = useQuery({
+    queryKey: ["platform-upi"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("platform_settings").select("key, value");
+      if (error) throw error;
+      return data;
+    },
+  });
+  useEffect(() => {
+    if (!current.data) return;
+    setUpiId(current.data.find((r) => r.key === "upi_id")?.value ?? "");
+    setPayee(current.data.find((r) => r.key === "upi_payee_name")?.value || "Digital Udyam");
+  }, [current.data]);
+  const save = useMutation({
+    mutationFn: () => saveFn({ data: { upiId, payee } }),
+    onSuccess: () => toast.success("UPI details saved."),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <form className="surface mb-5 grid gap-3 p-5 md:grid-cols-[1fr_1fr_auto] md:items-end" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+      <div className="space-y-1.5"><Label htmlFor="upi-id">Your UPI ID (plan payments go here)</Label><Input id="upi-id" placeholder="yourname@okaxis" value={upiId} onChange={(e) => setUpiId(e.target.value.trim())} /></div>
+      <div className="space-y-1.5"><Label htmlFor="upi-payee">Name shown to payer</Label><Input id="upi-payee" value={payee} onChange={(e) => setPayee(e.target.value)} /></div>
+      <Button type="submit" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save UPI"}</Button>
+    </form>
   );
 }
