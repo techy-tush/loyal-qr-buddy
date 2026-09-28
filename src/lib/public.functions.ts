@@ -533,3 +533,77 @@ export const exploreBusinesses = createServerFn({ method: "GET" })
     const cities = Array.from(new Set((cityRows ?? []).map((r) => (r.city ?? "").trim()).filter(Boolean))).sort();
     return { businesses: rows ?? [], cities };
   });
+
+/* ------------------------------ One customer account (by phone) ------------------------------ */
+
+async function ensureCard(db: Awaited<ReturnType<typeof admin>>, businessId: string, customerId: string) {
+  const { data: program } = await db
+    .from("loyalty_programs").select("id").eq("business_id", businessId).eq("is_active", true)
+    .order("created_at").limit(1).maybeSingle();
+  if (!program) return;
+  const { data: card } = await db
+    .from("loyalty_cards").select("id").eq("customer_id", customerId).eq("program_id", program.id).maybeSingle();
+  if (!card) await db.from("loyalty_cards").insert({ business_id: businessId, customer_id: customerId, program_id: program.id });
+}
+
+export const getMyShops = createServerFn({ method: "GET" })
+  .inputValidator((d: { customerToken: string }) => z.object({ customerToken: z.string().min(8) }).parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: me } = await db.from("customers").select("phone").eq("access_token", data.customerToken).maybeSingle();
+    if (!me) throw new Error("Account not found.");
+    const { data: rows } = await db
+      .from("customers")
+      .select("id, business_id, access_token, total_visits, last_visit_at, businesses(name, logo_url, city, category)")
+      .eq("phone", me.phone)
+      .order("last_visit_at", { ascending: false, nullsFirst: false })
+      .limit(50);
+    const list = rows ?? [];
+    const ids = list.map((r) => r.id);
+    const bizIds = list.map((r) => r.business_id);
+    const today = new Date().toISOString().slice(0, 10);
+    const [{ data: rewards }, { data: offers }] = await Promise.all([
+      ids.length ? db.from("rewards").select("customer_id").in("customer_id", ids).eq("status", "AVAILABLE") : Promise.resolve({ data: [] as { customer_id: string }[] }),
+      bizIds.length ? db.from("offers").select("business_id, ends_at").in("business_id", bizIds).eq("is_active", true) : Promise.resolve({ data: [] as { business_id: string; ends_at: string | null }[] }),
+    ]);
+    return list.map((r) => {
+      const b = (Array.isArray(r.businesses) ? r.businesses[0] : r.businesses) as { name: string; logo_url: string | null; city: string | null; category: string | null } | null;
+      return {
+        businessId: r.business_id,
+        token: r.access_token,
+        name: b?.name ?? "Shop",
+        logo_url: b?.logo_url ?? null,
+        city: b?.city ?? null,
+        category: b?.category ?? null,
+        visits: r.total_visits,
+        rewards: (rewards ?? []).filter((x) => x.customer_id === r.id).length,
+        offers: (offers ?? []).filter((o) => o.business_id === r.business_id && (!o.ends_at || o.ends_at >= today)).length,
+      };
+    });
+  });
+
+export const visitBusiness = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ customerToken: z.string().min(8), businessId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: me } = await db
+      .from("customers").select("full_name, phone, email, dob, anniversary, marketing_consent")
+      .eq("access_token", data.customerToken).maybeSingle();
+    if (!me) throw new Error("Account not found. Please sign in with your mobile number again.");
+    const { data: biz } = await db.from("businesses").select("id, status").eq("id", data.businessId).maybeSingle();
+    if (!biz || biz.status !== "ACTIVE") throw new Error("This shop is not available.");
+    const { data: existing } = await db
+      .from("customers").select("id, access_token").eq("business_id", biz.id).eq("phone", me.phone).maybeSingle();
+    if (existing) {
+      await ensureCard(db, biz.id, existing.id);
+      return { customerToken: existing.access_token };
+    }
+    const { data: branch } = await db.from("branches").select("id").eq("business_id", biz.id).eq("is_active", true).order("created_at").limit(1).maybeSingle();
+    const { data: created, error } = await db
+      .from("customers")
+      .insert({ business_id: biz.id, branch_id: branch?.id ?? null, full_name: me.full_name, phone: me.phone, email: me.email, dob: me.dob, anniversary: me.anniversary, marketing_consent: me.marketing_consent })
+      .select("id, access_token").single();
+    if (error) throw new Error("Could not open this shop. Please try again.");
+    await ensureCard(db, biz.id, created.id);
+    return { customerToken: created.access_token };
+  });
