@@ -969,7 +969,7 @@ function BusinessDetailDialog({ id, onClose }: { id: string | null; onClose: () 
     queryFn: () => fn({ data: { businessId: id!, search } }),
   });
   const d = q.data;
-  const b = d?.business as Record<string, string | null> | undefined;
+  const b = d?.business;
   return (
     <Dialog open={Boolean(id)} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
