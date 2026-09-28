@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users } from "lucide-react";
+import { Download, Search, Users } from "lucide-react";
 import { AppShell, EmptyState, PageHeader } from "@/components/app/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,12 +100,28 @@ function CustomersPage() {
   const rows = query.data?.rows ?? [];
   const total = query.data?.count ?? 0;
 
+  function exportVisibleRows() {
+    if (rows.length === 0) return;
+    const escape = (value: string | number | null) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const csv = [
+      ["Name", "Phone", "DOB", "Anniversary", "Last visit", "Visits", "VIP"].map(escape).join(","),
+      ...rows.map((customer) => [customer.full_name, customer.phone, customer.dob, customer.anniversary, customer.last_visit_at, customer.total_visits ?? 0, customer.is_vip ? "Yes" : "No"].map(escape).join(",")),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `digital-udyam-customers-page-${page + 1}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <PageHeader title="Customers" description="Your loyalty members and their activity." />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-72">
+      <div className="mb-4 grid gap-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex">
+        <div className="relative min-w-0 sm:w-72">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -114,7 +130,9 @@ function CustomersPage() {
             onChange={(e) => setRawSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <Button variant="outline" onClick={exportVisibleRows} disabled={rows.length === 0} aria-label="Download visible customers as CSV"><Download className="size-4" /><span className="hidden sm:inline">Export CSV</span></Button>
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
           {filters.map((f) => (
             <Button
               key={f.key}

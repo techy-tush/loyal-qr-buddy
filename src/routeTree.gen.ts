@@ -33,6 +33,7 @@ import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticated/rewards'
 import { Route as AuthenticatedScratchCardsRouteImport } from './routes/_authenticated/scratch-cards'
 import { Route as AuthenticatedSecurityRouteImport } from './routes/_authenticated/security'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStampRouteImport } from './routes/_authenticated/stamp'
 import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
@@ -162,6 +163,11 @@ const AuthenticatedSecurityRoute = AuthenticatedSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/rewards': typeof AuthenticatedRewardsRoute
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/security': typeof AuthenticatedSecurityRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/rewards': typeof AuthenticatedRewardsRoute
   '/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/security': typeof AuthenticatedSecurityRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stamp': typeof AuthenticatedStampRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   '/_authenticated/rewards': typeof AuthenticatedRewardsRoute
   '/_authenticated/scratch-cards': typeof AuthenticatedScratchCardsRoute
   '/_authenticated/security': typeof AuthenticatedSecurityRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stamp': typeof AuthenticatedStampRoute
   '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/scratch-cards'
     | '/security'
+    | '/settings'
     | '/staff'
     | '/stamp'
     | '/subscription'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/scratch-cards'
     | '/security'
+    | '/settings'
     | '/staff'
     | '/stamp'
     | '/subscription'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rewards'
     | '/_authenticated/scratch-cards'
     | '/_authenticated/security'
+    | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stamp'
     | '/_authenticated/subscription'
@@ -599,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSecurityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/staff': {
       id: '/_authenticated/staff'
       path: '/staff'
@@ -687,6 +706,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRewardsRoute: typeof AuthenticatedRewardsRoute
   AuthenticatedScratchCardsRoute: typeof AuthenticatedScratchCardsRoute
   AuthenticatedSecurityRoute: typeof AuthenticatedSecurityRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStampRoute: typeof AuthenticatedStampRoute
   AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRoute
@@ -706,6 +726,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRewardsRoute: AuthenticatedRewardsRoute,
   AuthenticatedScratchCardsRoute: AuthenticatedScratchCardsRoute,
   AuthenticatedSecurityRoute: AuthenticatedSecurityRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStampRoute: AuthenticatedStampRoute,
   AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRoute,

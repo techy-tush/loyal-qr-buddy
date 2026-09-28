@@ -22,8 +22,10 @@ import {
   MessageSquare,
   Menu,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -69,7 +71,15 @@ const navItems: NavItem[] = [
   },
   { to: "/admin", label: "Platform admin", icon: ShieldCheck, roles: ["SUPER_ADMIN"] },
   { to: "/security", label: "Security audit", icon: ShieldAlert, roles: ["SUPER_ADMIN"] },
+  { to: "/settings", label: "Settings", icon: Settings },
+];
 
+const mobileNav: NavItem[] = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/customers", label: "Customers", icon: Users },
+  { to: "/rewards", label: "Rewards", icon: Gift },
+  { to: "/scratch-cards", label: "Claims", icon: Ticket },
+  { to: "/settings", label: "Settings", icon: Settings, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -86,6 +96,7 @@ function Shell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [collapsed, setCollapsed] = useState(false);
 
   const visibleNav = navItems.filter((i) => !i.roles || (role && i.roles.includes(role)));
 
@@ -122,8 +133,8 @@ function Shell({ children }: { children: ReactNode }) {
     );
   }
 
-  const sidebar = (
-    <nav className="flex flex-col gap-0.5 p-3">
+  const sidebar = (compact = false) => (
+    <nav className="flex flex-col gap-1 p-3">
       {visibleNav.map((item) => {
         const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
         return (
@@ -131,14 +142,14 @@ function Shell({ children }: { children: ReactNode }) {
             key={item.to}
             to={item.to}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
               active
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
             )}
           >
-            <item.icon className="size-4" />
-            {item.label}
+            <item.icon className="size-4 shrink-0" />
+            {!compact ? <span className="truncate">{item.label}</span> : null}
           </Link>
         );
       })}
@@ -147,14 +158,34 @@ function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
-        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-          <Logo to="/dashboard" />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:block",
+          collapsed ? "w-[76px]" : "w-64",
+        )}
+      >
+        <div className={cn("flex h-16 items-center border-b border-sidebar-border", collapsed ? "justify-center px-2" : "px-4")}>
+          {collapsed ? (
+            <Link to="/dashboard" aria-label="Digital Udyam" className="grid size-9 place-items-center rounded-md bg-sidebar-primary font-display text-sm font-extrabold text-sidebar-primary-foreground">
+              DU
+            </Link>
+          ) : (
+            <Logo to="/dashboard" />
+          )}
         </div>
-        {sidebar}
+        {sidebar(collapsed)}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed((value) => !value)}
+          className="absolute bottom-4 right-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+        >
+          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </Button>
       </aside>
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur">
+      <div className={cn("transition-[padding] duration-200", collapsed ? "lg:pl-[76px]" : "lg:pl-64")}>
+        <header className="sticky top-0 z-30 grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur md:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="lg:hidden">
@@ -165,7 +196,7 @@ function Shell({ children }: { children: ReactNode }) {
               <div className="flex h-16 items-center border-b border-border px-4">
                 <Logo to="/dashboard" />
               </div>
-              {sidebar}
+              {sidebar()}
             </SheetContent>
           </Sheet>
 
@@ -188,6 +219,7 @@ function Shell({ children }: { children: ReactNode }) {
             )}
           </div>
 
+          <div className="hidden sm:block">
           {branches.length > 0 ? (
             <Select
               value={branchId ?? "all"}
@@ -206,6 +238,7 @@ function Shell({ children }: { children: ReactNode }) {
               </SelectContent>
             </Select>
           ) : null}
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -226,8 +259,28 @@ function Shell({ children }: { children: ReactNode }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <div className="p-4 pb-20 md:p-6">{children}</div>
+        <main className="mx-auto w-full max-w-[1600px] p-4 pb-28 md:p-6 lg:pb-8">{children}</main>
       </div>
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[76px] grid-cols-5 border-t border-border bg-card/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        {mobileNav.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => {
+          const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                "flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <span className={cn("grid size-8 place-items-center rounded-md", active && "bg-accent")}>
+                <item.icon className="size-5" />
+              </span>
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -242,9 +295,9 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-extrabold">{title}</h1>
+    <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+      <div className="min-w-0">
+        <h1 className="truncate text-2xl font-extrabold">{title}</h1>
         {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {action}
@@ -265,7 +318,7 @@ export function EmptyState({
 }) {
   return (
     <div className="surface flex flex-col items-center justify-center px-6 py-16 text-center">
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-accent text-primary">
+      <span className="flex size-12 items-center justify-center rounded-md bg-accent text-primary">
         <Icon className="size-6" />
       </span>
       <h3 className="mt-4 font-semibold">{title}</h3>
@@ -287,7 +340,7 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="surface p-5">
+    <div className="surface p-4 md:p-5">
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
         {Icon ? <Icon className="size-4 text-primary" /> : null}
