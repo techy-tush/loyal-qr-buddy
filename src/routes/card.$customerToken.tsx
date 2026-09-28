@@ -13,6 +13,9 @@ import {
   Store,
   Ticket,
   UserRound,
+  Compass,
+  MapPin,
+  Search,
   Clock3,
   CheckCircle2,
   XCircle,
@@ -26,6 +29,7 @@ import {
   selfStamp,
   submitFeedback,
   updateCustomerProfile,
+  exploreBusinesses,
 } from "@/lib/public.functions";
 import { registerPushDevice } from "@/lib/push.functions";
 import { enablePush, pushClientReady } from "@/lib/push-client";
@@ -60,12 +64,13 @@ export const Route = createFileRoute("/card/$customerToken")({
   component: CustomerPortal,
 });
 
-type TabKey = "card" | "rewards" | "offers" | "feedback" | "profile";
+type TabKey = "card" | "rewards" | "offers" | "explore" | "feedback" | "profile";
 
 const TABS: { key: TabKey; label: string; icon: typeof Gift }[] = [
   { key: "card", label: "Visit", icon: Store },
   { key: "rewards", label: "Rewards", icon: Gift },
   { key: "offers", label: "Offers", icon: Ticket },
+  { key: "explore", label: "Explore", icon: Compass },
   { key: "feedback", label: "Rate", icon: Star },
   { key: "profile", label: "Profile", icon: UserRound },
 ];
@@ -387,6 +392,8 @@ function CustomerPortal() {
           </Section>
         ) : null}
 
+        {tab === "explore" ? <ExplorePanel /> : null}
+
         {tab === "profile" ? <ProfilePanel customerToken={customerToken} phone={customer.phone} /> : null}
       </main>
 
@@ -403,7 +410,7 @@ function CustomerPortal() {
                 onClick={() => setTab(key)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
+                  "relative flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
@@ -543,5 +550,69 @@ function ProfilePanel({ customerToken, phone }: { customerToken: string; phone: 
         <Button type="submit" className="h-11" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save profile"}</Button>
       </form>
     </Section>
+  );
+}
+
+function ExplorePanel() {
+  const exploreFn = useServerFn(exploreBusinesses);
+  const [q, setQ] = useState("");
+  const [city, setCity] = useState("");
+  const [debounced, setDebounced] = useState({ q: "", city: "" });
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced({ q, city }), 300);
+    return () => clearTimeout(t);
+  }, [q, city]);
+  const list = useQuery({
+    queryKey: ["explore", debounced],
+    queryFn: () => exploreFn({ data: debounced }),
+  });
+  const rows = list.data?.businesses ?? [];
+  return (
+    <div className="space-y-3">
+      <div className="surface space-y-3 p-4">
+        <p className="font-display text-lg font-bold">Explore nearby</p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search cafe, salon, gym…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" placeholder="City, area or pincode" value={city} list="explore-cities" onChange={(e) => setCity(e.target.value)} />
+          <datalist id="explore-cities">{(list.data?.cities ?? []).map((c) => <option key={c} value={c} />)}</datalist>
+        </div>
+        {(list.data?.cities ?? []).length > 0 ? (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {(list.data?.cities ?? []).slice(0, 12).map((c) => (
+              <button key={c} type="button" onClick={() => setCity(city === c ? "" : c)} className={cn("shrink-0 rounded-full border px-3 py-1 text-xs font-semibold", city === c ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card")}>{c}</button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      {list.isLoading ? (
+        <Skeleton className="h-40 w-full rounded-2xl" />
+      ) : rows.length === 0 ? (
+        <p className="surface p-6 text-center text-sm text-muted-foreground">No businesses found here yet. Try another area.</p>
+      ) : (
+        rows.map((b) => (
+          <div key={b.id} className="surface flex items-center gap-3 p-3">
+            {b.logo_url ? (
+              <img src={b.logo_url} alt={b.name} className="size-12 shrink-0 rounded-xl object-cover" />
+            ) : (
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent text-primary"><Store className="size-5" /></span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{b.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{[b.category, b.city].filter(Boolean).join(" · ")}</p>
+              {b.address ? <p className="truncate text-xs text-muted-foreground">{b.address}</p> : null}
+            </div>
+            {b.address || b.city ? (
+              <Button asChild size="sm" variant="outline">
+                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([b.name, b.address, b.city].filter(Boolean).join(", "))}`} target="_blank" rel="noreferrer">Map</a>
+              </Button>
+            ) : null}
+          </div>
+        ))
+      )}
+    </div>
   );
 }
