@@ -36,7 +36,9 @@ function LoginPage() {
       return;
     }
     toast.success("Welcome back!");
-    navigate({ to: "/dashboard" });
+    const { data: roles } = await supabase.from("user_roles").select("role");
+    const isAdmin = (roles ?? []).some((r) => r.role === "SUPER_ADMIN");
+    navigate({ to: isAdmin ? "/admin" : "/dashboard" });
   }
 
   async function handleGoogle() {
