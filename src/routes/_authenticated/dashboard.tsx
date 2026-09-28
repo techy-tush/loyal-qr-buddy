@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Gift, QrCode, Repeat, Stamp, UserPlus, Users, BadgeCheck, Clock3, Sparkles, Ticket } from "lucide-react";
-import { AppShell, PageHeader, StatCard } from "@/components/app/AppShell";
+import { AppShell, StatCard } from "@/components/app/AppShell";
 import { AreaTrend, BarTrend, LineTrend } from "@/components/app/Charts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
