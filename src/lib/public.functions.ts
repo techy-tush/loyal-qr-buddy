@@ -74,8 +74,8 @@ export const joinLoyalty = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(4),
-        full_name: z.string().min(2).max(80),
-        phone: z.string().min(6).max(20),
+        full_name: z.string().max(80).optional().or(z.literal("")),
+        phone: z.string().trim().min(6).max(20),
         email: z.string().email().optional().or(z.literal("")),
         dob: z.string().optional().or(z.literal("")),
         anniversary: z.string().optional().or(z.literal("")),
@@ -103,17 +103,25 @@ export const joinLoyalty = createServerFn({ method: "POST" })
     let accessToken = existing?.access_token;
 
     if (!customerId) {
+      // Same person at another shop? Reuse their account details.
+      const { data: other } = await db
+        .from("customers")
+        .select("full_name, email, dob, anniversary, marketing_consent")
+        .eq("phone", data.phone)
+        .order("created_at")
+        .limit(1)
+        .maybeSingle();
       const { data: created, error } = await db
         .from("customers")
         .insert({
           business_id: qr.business_id,
           branch_id: qr.branch_id,
-          full_name: data.full_name,
+          full_name: data.full_name?.trim() || other?.full_name || "Customer",
           phone: data.phone,
-          email: data.email || null,
-          dob: data.dob || null,
-          anniversary: data.anniversary || null,
-          marketing_consent: data.marketing_consent,
+          email: data.email || other?.email || null,
+          dob: data.dob || other?.dob || null,
+          anniversary: data.anniversary || other?.anniversary || null,
+          marketing_consent: other?.marketing_consent ?? data.marketing_consent,
         })
         .select("id, access_token")
         .single();
