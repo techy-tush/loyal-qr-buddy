@@ -813,8 +813,10 @@ export type Database = {
           business_id: string
           created_at: string
           currency: string
+          cycle: string | null
           id: string
           invoice_number: string | null
+          plan_id: string | null
           provider: string
           provider_ref: string | null
           status: string
@@ -825,8 +827,10 @@ export type Database = {
           business_id: string
           created_at?: string
           currency?: string
+          cycle?: string | null
           id?: string
           invoice_number?: string | null
+          plan_id?: string | null
           provider?: string
           provider_ref?: string | null
           status?: string
@@ -837,8 +841,10 @@ export type Database = {
           business_id?: string
           created_at?: string
           currency?: string
+          cycle?: string | null
           id?: string
           invoice_number?: string | null
+          plan_id?: string | null
           provider?: string
           provider_ref?: string | null
           status?: string
@@ -850,6 +856,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
           {
@@ -897,6 +910,24 @@ export type Database = {
           price_monthly?: number
           price_yearly?: number
           sort_order?: number
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }

@@ -334,7 +334,7 @@ export const listPaymentsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, amount, currency, provider, status, invoice_number, created_at, businesses(id, name)",
+        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, businesses(id, name), plans(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -423,4 +423,48 @@ export const listPlansAdmin = createServerFn({ method: "GET" })
       .order("sort_order");
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+/* ------------------------------ UPI settings & approvals ------------------------------ */
+
+export const saveUpiSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      upiId: z.string().trim().max(80).regex(/^$|^[A-Za-z0-9.\-_]{2,}@[A-Za-z]{2,}$/, "Enter a valid UPI ID like name@bank"),
+      payee: z.string().trim().min(2).max(60),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: ok } = await context.supabase.rpc("is_super_admin");
+    if (!ok) throw new Error("Platform administrators only.");
+    const { error } = await context.supabase.from("platform_settings").upsert([
+      { key: "upi_id", value: data.upiId, updated_at: new Date().toISOString() },
+      { key: "upi_payee_name", value: data.payee, updated_at: new Date().toISOString() },
+    ]);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const decideUpiPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ paymentId: z.string().uuid(), approve: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: ok } = await context.supabase.rpc("is_super_admin");
+    if (!ok) throw new Error("Platform administrators only.");
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await db.from("payments").select("id, business_id, plan_id, cycle, status").eq("id", data.paymentId).maybeSingle();
+    if (!p || p.status !== "PENDING") throw new Error("Payment not pending.");
+    if (!data.approve) {
+      await db.from("payments").update({ status: "FAILED" }).eq("id", p.id);
+      return { ok: true };
+    }
+    const { invoiceNumber, periodEnd } = await import("@/lib/billing.server");
+    await db.from("payments").update({ status: "SUCCESS", invoice_number: invoiceNumber() }).eq("id", p.id).eq("status", "PENDING");
+    const cycle = p.cycle === "YEARLY" ? "YEARLY" : "MONTHLY";
+    const patch = { status: "ACTIVE" as const, provider: "upi", current_period_end: periodEnd(cycle), ...(p.plan_id ? { plan_id: p.plan_id } : {}) };
+    const { data: sub } = await db.from("subscriptions").select("id").eq("business_id", p.business_id).maybeSingle();
+    if (sub) await db.from("subscriptions").update(patch).eq("id", sub.id);
+    else if (p.plan_id) await db.from("subscriptions").insert({ business_id: p.business_id, plan_id: p.plan_id, ...patch });
+    return { ok: true };
   });

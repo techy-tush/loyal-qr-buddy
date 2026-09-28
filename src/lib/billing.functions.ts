@@ -203,3 +203,58 @@ export const cancelSubscription = createServerFn({ method: "POST" })
     });
     return { ok: true as const };
   });
+
+/* ------------------------------ UPI payments ------------------------------ */
+
+/** Start a UPI payment for a plan: returns a UPI deep link with the plan amount. */
+export const startUpiPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ businessId: z.string().uuid(), planId: z.string().uuid(), cycle: cycleSchema.default("MONTHLY") }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("is_business_admin", { _business_id: data.businessId });
+    if (!isAdmin) throw new Error("Only the business owner can change the plan.");
+    const { data: plan } = await context.supabase
+      .from("plans").select("id, code, name, price_monthly, price_yearly, is_active").eq("id", data.planId).maybeSingle();
+    if (!plan || !plan.is_active) throw new Error("That plan is not available.");
+    const amount = Number(data.cycle === "YEARLY" ? plan.price_yearly : plan.price_monthly);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("This plan has no online price. Please contact our team.");
+
+    const { data: settings } = await context.supabase.from("platform_settings").select("key, value");
+    const upiId = settings?.find((s) => s.key === "upi_id")?.value?.trim();
+    const payee = settings?.find((s) => s.key === "upi_payee_name")?.value?.trim() || "Digital Udyam";
+    if (!upiId) throw new Error("UPI payments are not set up yet. Please contact the platform team.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: sub } = await supabaseAdmin.from("subscriptions").select("id").eq("business_id", data.businessId).maybeSingle();
+    const { data: payment, error } = await supabaseAdmin
+      .from("payments")
+      .insert({ business_id: data.businessId, subscription_id: sub?.id ?? null, amount, currency: "INR", provider: "upi", status: "PENDING", plan_id: plan.id, cycle: data.cycle })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const note = `${plan.name} plan ${data.cycle.toLowerCase()} ${payment.id.slice(0, 8)}`;
+    const params = new URLSearchParams({ pa: upiId, pn: payee, am: amount.toFixed(2), cu: "INR", tn: note, tr: payment.id.slice(0, 20) });
+    return { paymentId: payment.id, amount, planName: plan.name, upiId, payee, upiUrl: `upi://pay?${params.toString()}` };
+  });
+
+/** Owner submits the UPI transaction reference (UTR) after paying. */
+export const submitUpiReference = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ paymentId: z.string().uuid(), utr: z.string().trim().min(6).max(40).regex(/^[A-Za-z0-9]+$/) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: payment } = await context.supabase
+      .from("payments").select("id, business_id, status, provider").eq("id", data.paymentId).maybeSingle();
+    if (!payment || payment.provider !== "upi") throw new Error("Payment not found.");
+    const { data: isAdmin } = await context.supabase.rpc("is_business_admin", { _business_id: payment.business_id });
+    if (!isAdmin) throw new Error("Not allowed.");
+    if (payment.status !== "PENDING") throw new Error("This payment is already processed.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("payments").update({ provider_ref: data.utr.toUpperCase() }).eq("id", payment.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

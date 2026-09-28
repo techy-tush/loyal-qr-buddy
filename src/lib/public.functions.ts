@@ -508,3 +508,28 @@ export const getCustomerProfile = createServerFn({ method: "GET" })
     if (!c) throw new Error("Loyalty card not found.");
     return c;
   });
+
+/* ------------------------------ Explore businesses ------------------------------ */
+
+export const exploreBusinesses = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({ q: z.string().trim().max(60).default(""), city: z.string().trim().max(60).default("") }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const clean = (s: string) => s.replace(/[%,()*]/g, " ").trim();
+    let query = db
+      .from("businesses")
+      .select("id, name, slug, category, city, state, address, logo_url")
+      .eq("status", "ACTIVE")
+      .order("name")
+      .limit(60);
+    const q = clean(data.q);
+    const city = clean(data.city);
+    if (q) query = query.or(`name.ilike.%${q}%,category.ilike.%${q}%`);
+    if (city) query = query.or(`city.ilike.%${city}%,address.ilike.%${city}%,pincode.ilike.%${city}%,state.ilike.%${city}%`);
+    const { data: rows } = await query;
+    const { data: cityRows } = await db.from("businesses").select("city").eq("status", "ACTIVE").not("city", "is", null).limit(500);
+    const cities = Array.from(new Set((cityRows ?? []).map((r) => (r.city ?? "").trim()).filter(Boolean))).sort();
+    return { businesses: rows ?? [], cities };
+  });
