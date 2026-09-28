@@ -21,12 +21,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBusiness } from "@/hooks/use-business";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  cancelSubscription,
-  confirmUpgrade,
-  createUpgradeOrder,
-  getPaymentStatus,
-} from "@/lib/billing.functions";
+import { cancelSubscription, startUpiPayment } from "@/lib/billing.functions";
+import { UpiPayDialog, type UpiPayment } from "@/components/app/UpiPayDialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
@@ -53,24 +49,6 @@ export const Route = createFileRoute("/_authenticated/subscription")({
 });
 
 type Cycle = "MONTHLY" | "YEARLY";
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
-
-function loadCheckout() {
-  return new Promise<void>((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("Unavailable"));
-    if (window.Razorpay) return resolve();
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("The payment window could not load. Check your connection."));
-    document.body.appendChild(script);
-  });
-}
 
 const inr = (n: number) =>
   `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
@@ -107,11 +85,6 @@ function SubscriptionPage() {
   const startUpi = useServerFn(startUpiPayment);
   const [upiPay, setUpiPay] = useState<UpiPayment | null>(null);
   const cancelFn = useServerFn(cancelSubscription);
-
-  const paymentStatus = useQuery({
-    queryKey: ["payment-status"],
-    queryFn: () => getPaymentStatus(),
-  });
 
   const subQuery = useQuery({
     queryKey: ["subscription", business?.id],
