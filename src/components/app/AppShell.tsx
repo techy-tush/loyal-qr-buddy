@@ -71,7 +71,7 @@ const navItems: NavItem[] = [
   },
   { to: "/admin", label: "Platform admin", icon: ShieldCheck, roles: ["SUPER_ADMIN"] },
   { to: "/security", label: "Security audit", icon: ShieldAlert, roles: ["SUPER_ADMIN"] },
-  { to: "/settings", label: "Settings", icon: Settings, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const mobileNav: NavItem[] = [
