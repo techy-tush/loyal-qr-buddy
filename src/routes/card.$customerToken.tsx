@@ -74,8 +74,6 @@ function CustomerPortal() {
   const { customerToken } = Route.useParams();
   const queryClient = useQueryClient();
   const portalFn = useServerFn(getCustomerPortal);
-  const stampFn = useServerFn(selfStamp);
-  const scratchFn = useServerFn(playScratch);
   const feedbackFn = useServerFn(submitFeedback);
   const registerFn = useServerFn(registerPushDevice);
 
@@ -83,8 +81,6 @@ function CustomerPortal() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
-  const [scratchResult, setScratchResult] = useState<string | null>(null);
-  const [justStamped, setJustStamped] = useState(false);
   const [alertsOn, setAlertsOn] = useState(false);
 
   useEffect(() => {
@@ -99,31 +95,11 @@ function CustomerPortal() {
     retry: false,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["portal", customerToken] });
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["portal", customerToken] }),
+    [queryClient, customerToken],
+  );
 
-  const stamp = useMutation({
-    mutationFn: () => stampFn({ data: { customerToken } }),
-    onSuccess: (res) => {
-      setJustStamped(true);
-      toast.success(
-        res.rewardUnlocked
-          ? `Reward unlocked! Show code ${res.rewardCode} at the counter.`
-          : "Stamp added. Enjoy your visit!",
-      );
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const scratch = useMutation({
-    mutationFn: (campaignId: string) => scratchFn({ data: { customerToken, campaignId } }),
-    onSuccess: (res) => {
-      setScratchResult(res.isWin ? `You won ${res.label}!` : res.label);
-      if (res.isWin) toast.success(`You won ${res.label}!`);
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const feedback = useMutation({
     mutationFn: () => feedbackFn({ data: { customerToken, rating, comment } }),
