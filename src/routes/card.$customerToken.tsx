@@ -12,18 +12,28 @@ import {
   Star,
   Store,
   Ticket,
+  UserRound,
+  Clock3,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   getCustomerPortal,
+  getCustomerProfile,
+  getVisitStatus,
   playScratch,
+  requestVisit,
   selfStamp,
   submitFeedback,
+  updateCustomerProfile,
 } from "@/lib/public.functions";
 import { registerPushDevice } from "@/lib/push.functions";
 import { enablePush, pushClientReady } from "@/lib/push-client";
-import { StampGrid } from "@/components/loyalty/StampGrid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -50,21 +60,20 @@ export const Route = createFileRoute("/card/$customerToken")({
   component: CustomerPortal,
 });
 
-type TabKey = "card" | "rewards" | "offers" | "feedback";
+type TabKey = "card" | "rewards" | "offers" | "feedback" | "profile";
 
 const TABS: { key: TabKey; label: string; icon: typeof Gift }[] = [
-  { key: "card", label: "Card", icon: Store },
+  { key: "card", label: "Visit", icon: Store },
   { key: "rewards", label: "Rewards", icon: Gift },
   { key: "offers", label: "Offers", icon: Ticket },
   { key: "feedback", label: "Rate", icon: Star },
+  { key: "profile", label: "Profile", icon: UserRound },
 ];
 
 function CustomerPortal() {
   const { customerToken } = Route.useParams();
   const queryClient = useQueryClient();
   const portalFn = useServerFn(getCustomerPortal);
-  const stampFn = useServerFn(selfStamp);
-  const scratchFn = useServerFn(playScratch);
   const feedbackFn = useServerFn(submitFeedback);
   const registerFn = useServerFn(registerPushDevice);
 
@@ -72,8 +81,6 @@ function CustomerPortal() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
-  const [scratchResult, setScratchResult] = useState<string | null>(null);
-  const [justStamped, setJustStamped] = useState(false);
   const [alertsOn, setAlertsOn] = useState(false);
 
   useEffect(() => {
@@ -88,31 +95,11 @@ function CustomerPortal() {
     retry: false,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["portal", customerToken] });
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["portal", customerToken] }),
+    [queryClient, customerToken],
+  );
 
-  const stamp = useMutation({
-    mutationFn: () => stampFn({ data: { customerToken } }),
-    onSuccess: (res) => {
-      setJustStamped(true);
-      toast.success(
-        res.rewardUnlocked
-          ? `Reward unlocked! Show code ${res.rewardCode} at the counter.`
-          : "Stamp added. Enjoy your visit!",
-      );
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const scratch = useMutation({
-    mutationFn: (campaignId: string) => scratchFn({ data: { customerToken, campaignId } }),
-    onSuccess: (res) => {
-      setScratchResult(res.isWin ? `You won ${res.label}!` : res.label);
-      if (res.isWin) toast.success(`You won ${res.label}!`);
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const feedback = useMutation({
     mutationFn: () => feedbackFn({ data: { customerToken, rating, comment } }),
@@ -229,60 +216,27 @@ function CustomerPortal() {
             <div className="surface p-5">
               {card && program ? (
                 <>
-                  <p className="text-sm font-semibold">{program.name}</p>
-                  <p className="mb-4 text-xs text-muted-foreground">
-                    Reward: {program.reward_description}
+                  <p className="text-sm font-semibold">Reward: {program.reward_description}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {card.stamps} / {program.stamps_required} visits
                   </p>
-                  <StampGrid
-                    stamps={card.stamps}
-                    required={program.stamps_required}
-                    animateLast={justStamped}
-                  />
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, (card.stamps / program.stamps_required) * 100)}%` }}
+                    />
+                  </div>
                   <p className="mt-3 text-center text-sm font-semibold text-primary">
                     {remaining === 0
                       ? "Your reward is ready!"
                       : `${remaining} more ${remaining === 1 ? "visit" : "visits"} to unlock your reward`}
                   </p>
-                  {business.stamp_mode === "SELF_SCAN" ? (
-                    <Button
-                      className="mt-5 h-12 w-full text-base"
-                      onClick={() => stamp.mutate()}
-                      disabled={stamp.isPending}
-                    >
-                      {stamp.isPending ? "Adding stamp…" : "Add today's stamp"}
-                    </Button>
-                  ) : (
-                    <p className="mt-5 rounded-xl bg-accent/50 p-3 text-center text-xs text-muted-foreground">
-                      Show this card at the counter — staff will add your stamp.
-                    </p>
-                  )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  This business hasn’t set up a stamp card yet. Your visits are still being
-                  recorded.
-                </p>
+                <p className="text-sm text-muted-foreground">Your visits are being recorded.</p>
               )}
+              <VisitRequestPanel customerToken={customerToken} onDecided={invalidate} />
             </div>
-
-            {campaign && (scratchAvailable || scratchResult) ? (
-              <Section title="Scratch & win" icon={Gift}>
-                {scratchResult ? (
-                  <p className="rounded-xl bg-accent/50 p-4 text-center text-sm font-semibold">
-                    {scratchResult}
-                  </p>
-                ) : (
-                  <Button
-                    className="h-12 w-full"
-                    variant="outline"
-                    onClick={() => scratch.mutate(campaign.id)}
-                    disabled={scratch.isPending}
-                  >
-                    {scratch.isPending ? "Scratching…" : `Play ${campaign.name}`}
-                  </Button>
-                )}
-              </Section>
-            ) : null}
 
             {pushClientReady() && !alertsOn ? (
               <button
@@ -432,6 +386,8 @@ function CustomerPortal() {
             </div>
           </Section>
         ) : null}
+
+        {tab === "profile" ? <ProfilePanel customerToken={customerToken} phone={customer.phone} /> : null}
       </main>
 
       {/* Bottom tab bar */}
@@ -491,5 +447,101 @@ function Page({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background px-4 py-8">
       <div className="mx-auto w-full max-w-md space-y-4">{children}</div>
     </div>
+  );
+}
+
+function VisitRequestPanel({ customerToken, onDecided }: { customerToken: string; onDecided: () => void }) {
+  const statusFn = useServerFn(getVisitStatus);
+  const requestFn = useServerFn(requestVisit);
+  const queryClient = useQueryClient();
+  const status = useQuery({
+    queryKey: ["visit-status", customerToken],
+    queryFn: () => statusFn({ data: { customerToken } }),
+    refetchInterval: (q) => (q.state.data?.status === "PENDING" ? 5000 : false),
+  });
+  const last = status.data;
+  const [seenDecision, setSeenDecision] = useState<string | null>(null);
+  useEffect(() => {
+    if (last && last.status !== "PENDING" && last.id !== seenDecision) {
+      setSeenDecision(last.id);
+      onDecided();
+    }
+  }, [last, seenDecision, onDecided]);
+  const send = useMutation({
+    mutationFn: () => requestFn({ data: { customerToken } }),
+    onSuccess: () => {
+      toast.success("Request sent — the shop owner will approve it.");
+      queryClient.invalidateQueries({ queryKey: ["visit-status", customerToken] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const recent = last && Date.now() - new Date(last.decided_at ?? last.created_at).getTime() < 6 * 3600000;
+
+  if (last?.status === "PENDING")
+    return (
+      <p className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-accent/60 p-3 text-sm font-semibold">
+        <Clock3 className="size-4 text-primary" /> Waiting for owner approval…
+      </p>
+    );
+  return (
+    <div className="mt-5 space-y-3">
+      {recent && last?.status === "APPROVED" ? (
+        <p className="flex items-center justify-center gap-2 rounded-xl bg-accent/60 p-3 text-sm font-semibold text-primary">
+          <CheckCircle2 className="size-4" /> Your last visit was approved
+        </p>
+      ) : null}
+      {recent && last?.status === "REJECTED" ? (
+        <p className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+          <XCircle className="size-4" /> Your last request was rejected
+        </p>
+      ) : null}
+      <Button className="h-12 w-full text-base" onClick={() => send.mutate()} disabled={send.isPending}>
+        {send.isPending ? "Sending…" : "I'm here — request visit"}
+      </Button>
+    </div>
+  );
+}
+
+function ProfilePanel({ customerToken, phone }: { customerToken: string; phone: string }) {
+  const getFn = useServerFn(getCustomerProfile);
+  const saveFn = useServerFn(updateCustomerProfile);
+  const profile = useQuery({
+    queryKey: ["customer-profile", customerToken],
+    queryFn: () => getFn({ data: { customerToken } }),
+  });
+  const [form, setForm] = useState({ full_name: "", email: "", dob: "", anniversary: "", marketing_consent: false });
+  useEffect(() => {
+    if (!profile.data) return;
+    setForm({
+      full_name: profile.data.full_name,
+      email: profile.data.email ?? "",
+      dob: profile.data.dob ?? "",
+      anniversary: profile.data.anniversary ?? "",
+      marketing_consent: profile.data.marketing_consent,
+    });
+  }, [profile.data]);
+  const save = useMutation({
+    mutationFn: () => saveFn({ data: { customerToken, ...form } }),
+    onSuccess: () => toast.success("Profile saved."),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  if (profile.isLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
+  return (
+    <Section title="My profile" icon={UserRound}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+        <div className="grid gap-1.5"><Label htmlFor="p-name">Name</Label><Input id="p-name" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+        <div className="grid gap-1.5"><Label>Mobile</Label><Input value={phone} disabled /></div>
+        <div className="grid gap-1.5"><Label htmlFor="p-email">Email (optional)</Label><Input id="p-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-1.5"><Label htmlFor="p-dob">Birthday</Label><Input id="p-dob" type="date" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="p-ann">Anniversary</Label><Input id="p-ann" type="date" value={form.anniversary} onChange={(e) => setForm({ ...form, anniversary: e.target.value })} /></div>
+        </div>
+        <label className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Checkbox checked={form.marketing_consent} onCheckedChange={(v) => setForm({ ...form, marketing_consent: Boolean(v) })} />
+          Send me offers and reward reminders.
+        </label>
+        <Button type="submit" className="h-11" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save profile"}</Button>
+      </form>
+    </Section>
   );
 }

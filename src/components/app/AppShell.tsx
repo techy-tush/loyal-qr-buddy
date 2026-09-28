@@ -48,38 +48,25 @@ type NavItem = { to: string; label: string; icon: typeof Users; roles?: string[]
 const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
-  { to: "/loyalty", label: "Loyalty", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/qr-codes", label: "QR codes", icon: QrCode },
-  { to: "/stamp", label: "Stamp & redeem", icon: Ticket },
-  { to: "/rewards", label: "Rewards", icon: Gift },
   { to: "/offers", label: "Offers", icon: Sparkles, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
-  { to: "/scratch-cards", label: "Scratch cards", icon: Ticket, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
+  { to: "/rewards", label: "Rewards", icon: Gift },
+  { to: "/qr-codes", label: "QR codes", icon: QrCode },
+  { to: "/loyalty", label: "Reward rule", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
-  {
-    to: "/campaigns",
-    label: "Campaigns",
-    icon: Megaphone,
-    roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"],
-  },
   { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
   { to: "/staff", label: "Staff", icon: UserCog, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
-  {
-    to: "/subscription",
-    label: "Subscription",
-    icon: CreditCard,
-    roles: ["BUSINESS_OWNER", "SUPER_ADMIN"],
-  },
+  { to: "/subscription", label: "Subscription", icon: CreditCard, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
   { to: "/admin", label: "Platform admin", icon: ShieldCheck, roles: ["SUPER_ADMIN"] },
   { to: "/security", label: "Security audit", icon: ShieldAlert, roles: ["SUPER_ADMIN"] },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const mobileNav: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Approvals", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/offers", label: "Offers", icon: Sparkles },
   { to: "/rewards", label: "Rewards", icon: Gift },
-  { to: "/scratch-cards", label: "Claims", icon: Ticket },
-  { to: "/settings", label: "Settings", icon: Settings, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

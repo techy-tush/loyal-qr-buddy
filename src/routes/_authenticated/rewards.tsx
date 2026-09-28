@@ -64,7 +64,7 @@ function RewardsPage() {
   const queryClient = useQueryClient();
   const isAdmin = role === "BUSINESS_OWNER" || role === "BUSINESS_MANAGER" || role === "SUPER_ADMIN";
 
-  const [status, setStatus] = useState<Status>("ALL");
+  const status = "ALL" as Status;
   const [page, setPage] = useState(0);
   const [code, setCode] = useState("");
   const [grantOpen, setGrantOpen] = useState(false);
@@ -232,15 +232,13 @@ function RewardsPage() {
     <div>
       <PageHeader
         title="Rewards"
-        description="Rewards unlock automatically when a stamp card fills up."
+        description="Everyone who won a reward. Tap Redeem when they claim it."
         action={grantDialog}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid gap-4 grid-cols-2">
         <StatCard label="Waiting to be redeemed" value={c["AVAILABLE"] ?? 0} icon={Gift} />
         <StatCard label="Redeemed" value={c["REDEEMED"] ?? 0} icon={BadgeCheck} />
-        <StatCard label="Expired" value={c["EXPIRED"] ?? 0} />
-        <StatCard label="Cancelled" value={c["CANCELLED"] ?? 0} />
       </div>
 
       <div className="surface mb-6 p-5">
@@ -268,26 +266,6 @@ function RewardsPage() {
         </p>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Select
-          value={status}
-          onValueChange={(v) => {
-            setStatus(v as Status);
-            setPage(0);
-          }}
-        >
-          <SelectTrigger className="w-[190px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s === "ALL" ? "All rewards" : s.charAt(0) + s.slice(1).toLowerCase()}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       {rewards.isLoading ? (
         <Skeleton className="h-64 rounded-2xl" />
@@ -305,7 +283,6 @@ function RewardsPage() {
                 <TableHead>Code</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Reward</TableHead>
-                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead />
@@ -322,7 +299,6 @@ function RewardsPage() {
                       <p className="text-xs text-muted-foreground">{customer?.phone}</p>
                     </TableCell>
                     <TableCell className="text-sm">{r.description}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{r.source}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -340,15 +316,9 @@ function RewardsPage() {
                       {r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {r.status === "AVAILABLE" && isAdmin ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground"
-                          onClick={() => cancel.mutate(r.id)}
-                          disabled={cancel.isPending}
-                        >
-                          <XCircle className="mr-1.5 size-4" /> Cancel
+                      {r.status === "AVAILABLE" ? (
+                        <Button size="sm" onClick={() => redeem.mutate(r.code)} disabled={redeem.isPending}>
+                          <BadgeCheck className="mr-1.5 size-4" /> Redeem
                         </Button>
                       ) : null}
                     </TableCell>

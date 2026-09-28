@@ -415,3 +415,96 @@ export const submitContact = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ------------------------------ Visit requests ------------------------------ */
+
+export const requestVisit = createServerFn({ method: "POST" })
+  .inputValidator((d: { customerToken: string }) =>
+    z.object({ customerToken: z.string().min(8) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: customer } = await db
+      .from("customers")
+      .select("id, business_id, branch_id")
+      .eq("access_token", data.customerToken)
+      .maybeSingle();
+    if (!customer) throw new Error("Loyalty card not found.");
+    const { data: pending } = await db
+      .from("visit_requests")
+      .select("id, status, created_at")
+      .eq("customer_id", customer.id)
+      .eq("status", "PENDING")
+      .maybeSingle();
+    if (pending) return pending;
+    const { data: created, error } = await db
+      .from("visit_requests")
+      .insert({ business_id: customer.business_id, customer_id: customer.id, branch_id: customer.branch_id })
+      .select("id, status, created_at")
+      .single();
+    if (error) throw new Error("Could not send your request. Please try again.");
+    return created;
+  });
+
+export const getVisitStatus = createServerFn({ method: "GET" })
+  .inputValidator((d: { customerToken: string }) =>
+    z.object({ customerToken: z.string().min(8) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: customer } = await db
+      .from("customers").select("id").eq("access_token", data.customerToken).maybeSingle();
+    if (!customer) throw new Error("Loyalty card not found.");
+    const { data: last } = await db
+      .from("visit_requests")
+      .select("id, status, created_at, decided_at")
+      .eq("customer_id", customer.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return last ?? null;
+  });
+
+export const updateCustomerProfile = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        customerToken: z.string().min(8),
+        full_name: z.string().trim().min(2).max(80),
+        email: z.string().trim().email().max(120).optional().or(z.literal("")),
+        dob: z.string().optional().or(z.literal("")),
+        anniversary: z.string().optional().or(z.literal("")),
+        marketing_consent: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { error } = await db
+      .from("customers")
+      .update({
+        full_name: data.full_name,
+        email: data.email || null,
+        dob: data.dob || null,
+        anniversary: data.anniversary || null,
+        marketing_consent: data.marketing_consent,
+      })
+      .eq("access_token", data.customerToken);
+    if (error) throw new Error("Could not save your profile.");
+    return { ok: true };
+  });
+
+export const getCustomerProfile = createServerFn({ method: "GET" })
+  .inputValidator((d: { customerToken: string }) =>
+    z.object({ customerToken: z.string().min(8) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: c } = await db
+      .from("customers")
+      .select("full_name, phone, email, dob, anniversary, marketing_consent")
+      .eq("access_token", data.customerToken)
+      .maybeSingle();
+    if (!c) throw new Error("Loyalty card not found.");
+    return c;
+  });
