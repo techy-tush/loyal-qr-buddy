@@ -266,3 +266,48 @@ export const decideVisit = createServerFn({ method: "POST" })
       throw e;
     }
   });
+
+/** Redeem an offer for a customer (by phone). Checks dates, usage limit and one use per customer. */
+export const redeemOffer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ offerId: z.string().uuid(), phone: z.string().trim().min(6).max(20) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: offer } = await context.supabase
+      .from("offers")
+      .select("id, business_id, title, is_active, starts_at, ends_at, usage_limit")
+      .eq("id", data.offerId)
+      .maybeSingle();
+    if (!offer) throw new Error("Offer not found.");
+    const { data: member } = await context.supabase.rpc("is_business_member", { _business_id: offer.business_id });
+    if (!member) throw new Error("You don't have access to this business.");
+    if (!offer.is_active) throw new Error("This offer is not live.");
+    const today = new Date().toISOString().slice(0, 10);
+    if (offer.starts_at && offer.starts_at > today) throw new Error("This offer has not started yet.");
+    if (offer.ends_at && offer.ends_at < today) throw new Error("This offer has ended.");
+
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { data: customer } = await db
+      .from("customers").select("id, full_name")
+      .eq("business_id", offer.business_id).eq("phone", data.phone).maybeSingle();
+    if (!customer) throw new Error("No customer with this mobile number at your shop.");
+    const { count: mine } = await db
+      .from("offer_redemptions").select("id", { count: "exact", head: true })
+      .eq("offer_id", offer.id).eq("customer_id", customer.id);
+    if ((mine ?? 0) > 0) throw new Error(`${customer.full_name} has already used this offer.`);
+    if (offer.usage_limit) {
+      const { count } = await db
+        .from("offer_redemptions").select("id", { count: "exact", head: true }).eq("offer_id", offer.id);
+      if ((count ?? 0) >= offer.usage_limit) throw new Error("This offer has reached its usage limit.");
+    }
+    const { error } = await db.from("offer_redemptions").insert({
+      business_id: offer.business_id, offer_id: offer.id, customer_id: customer.id,
+    });
+    if (error) throw new Error("Could not redeem the offer.");
+    await db.from("audit_logs").insert({
+      business_id: offer.business_id, actor_id: context.userId, action: "OFFER_REDEEMED",
+      entity: "offer", entity_id: offer.id, meta: { customer_id: customer.id },
+    });
+    return { customerName: customer.full_name, title: offer.title };
+  });
