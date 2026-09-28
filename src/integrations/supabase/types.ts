@@ -1440,6 +1440,61 @@ export type Database = {
         }
         Relationships: []
       }
+      visit_requests: {
+        Row: {
+          branch_id: string | null
+          business_id: string
+          created_at: string
+          customer_id: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          branch_id?: string | null
+          business_id: string
+          created_at?: string
+          customer_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          branch_id?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_requests_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
