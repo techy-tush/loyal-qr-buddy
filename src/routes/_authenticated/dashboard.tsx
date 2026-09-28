@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useBusiness } from "@/hooks/use-business";
 import { fetchBusinessMetrics } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
+import { VisitApprovals } from "@/components/app/VisitApprovals";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -92,13 +93,15 @@ function DashboardPage() {
         </div>
       </section>
 
-      <section className="my-6">
+      <div className="mt-6"><VisitApprovals businessId={business.id} /></div>
+
+      <section className="mb-6">
         <div className="mb-4"><h2 className="text-lg font-bold">Quick actions</h2><p className="text-sm text-muted-foreground">Keep customers coming back.</p></div>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { to: "/loyalty" as const, label: "Stamp card", hint: "Loyalty", icon: Stamp },
-            { to: "/scratch-cards" as const, label: "Scratch card", hint: "Instant win", icon: Ticket },
-            { to: "/offers" as const, label: "Create offer", hint: "Campaign", icon: Sparkles },
+            { to: "/offers" as const, label: "Create offer", hint: "Free item / discount", icon: Sparkles },
+            { to: "/rewards" as const, label: "Redeem", hint: "Reward code", icon: Gift },
+            { to: "/qr-codes" as const, label: "My QR", hint: "Print & share", icon: QrCode },
           ].map((action) => (
             <Link key={action.to} to={action.to} className="surface group flex min-w-0 flex-col items-center p-3 text-center transition hover:-translate-y-0.5 hover:shadow-soft md:flex-row md:items-center md:gap-3 md:text-left"><span className="grid size-12 shrink-0 place-items-center rounded-full bg-accent text-primary"><action.icon className="size-5" /></span><span className="mt-2 min-w-0 md:mt-0"><span className="block truncate text-xs font-bold md:text-sm">{action.label}</span><span className="block text-[10px] text-muted-foreground md:text-xs">{action.hint}</span></span></Link>
           ))}
