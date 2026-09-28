@@ -104,8 +104,8 @@ function SubscriptionPage() {
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const isOwner = role === "BUSINESS_OWNER" || role === "SUPER_ADMIN";
 
-  const startOrder = useServerFn(createUpgradeOrder);
-  const finishOrder = useServerFn(confirmUpgrade);
+  const startUpi = useServerFn(startUpiPayment);
+  const [upiPay, setUpiPay] = useState<UpiPayment | null>(null);
   const cancelFn = useServerFn(cancelSubscription);
 
   const paymentStatus = useQuery({
@@ -187,45 +187,10 @@ function SubscriptionPage() {
     if (!business) return;
     setBusyPlan(planId);
     try {
-      const order = await startOrder({ data: { businessId: business.id, planId, cycle } });
-      await loadCheckout();
-      const Checkout = window.Razorpay;
-      if (!Checkout) throw new Error("The payment window could not load.");
-      const checkout = new Checkout({
-        key: order.keyId,
-        order_id: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Digital Udyam",
-        description: `${order.planName} plan — ${cycle === "YEARLY" ? "yearly" : "monthly"}`,
-        prefill: { name: business.name, email: business.email ?? undefined },
-        theme: { color: "#4F9F78" },
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            await finishOrder({
-              data: {
-                businessId: business.id,
-                planId,
-                cycle,
-                orderId: response.razorpay_order_id,
-                paymentId: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              },
-            });
-            toast.success("Payment received — your new plan is active.");
-            qc.invalidateQueries({ queryKey: ["subscription", business.id] });
-            qc.invalidateQueries({ queryKey: ["payments", business.id] });
-          } catch (e) {
-            toast.error((e as Error).message);
-          }
-        },
-        modal: { ondismiss: () => setBusyPlan(null) },
-      } as Record<string, unknown>);
-      checkout.open();
+      const res = await startUpi({ data: { businessId: business.id, planId, cycle } });
+      setUpiPay(res);
+      qc.invalidateQueries({ queryKey: ["payments", business.id] });
+      if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = res.upiUrl;
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -310,15 +275,11 @@ function SubscriptionPage() {
         </div>
       )}
 
-      {paymentStatus.data && !paymentStatus.data.enabled ? (
-        <div className="surface mt-4 flex items-start gap-3 border-warning/40 bg-warning/10 p-4">
-          <ShieldAlert className="mt-0.5 size-4 text-warning" />
-          <p className="text-sm">
-            Online card and UPI payments are not switched on for this platform yet, so upgrades
-            can't be completed right now.
-          </p>
-        </div>
-      ) : null}
+      <UpiPayDialog
+        payment={upiPay}
+        onClose={() => setUpiPay(null)}
+        onSubmitted={() => qc.invalidateQueries({ queryKey: ["payments", business.id] })}
+      />
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Plans</h2>
@@ -391,8 +352,7 @@ function SubscriptionPage() {
                       disabled={
                         !isOwner ||
                         isCurrent ||
-                        busyPlan === plan.id ||
-                        paymentStatus.data?.enabled === false
+                        busyPlan === plan.id
                       }
                       onClick={() => upgrade(plan.id)}
                     >
