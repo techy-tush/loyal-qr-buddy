@@ -12,18 +12,28 @@ import {
   Star,
   Store,
   Ticket,
+  UserRound,
+  Clock3,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   getCustomerPortal,
+  getCustomerProfile,
+  getVisitStatus,
   playScratch,
+  requestVisit,
   selfStamp,
   submitFeedback,
+  updateCustomerProfile,
 } from "@/lib/public.functions";
 import { registerPushDevice } from "@/lib/push.functions";
 import { enablePush, pushClientReady } from "@/lib/push-client";
-import { StampGrid } from "@/components/loyalty/StampGrid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -50,13 +60,14 @@ export const Route = createFileRoute("/card/$customerToken")({
   component: CustomerPortal,
 });
 
-type TabKey = "card" | "rewards" | "offers" | "feedback";
+type TabKey = "card" | "rewards" | "offers" | "feedback" | "profile";
 
 const TABS: { key: TabKey; label: string; icon: typeof Gift }[] = [
-  { key: "card", label: "Card", icon: Store },
+  { key: "card", label: "Visit", icon: Store },
   { key: "rewards", label: "Rewards", icon: Gift },
   { key: "offers", label: "Offers", icon: Ticket },
   { key: "feedback", label: "Rate", icon: Star },
+  { key: "profile", label: "Profile", icon: UserRound },
 ];
 
 function CustomerPortal() {
@@ -229,60 +240,27 @@ function CustomerPortal() {
             <div className="surface p-5">
               {card && program ? (
                 <>
-                  <p className="text-sm font-semibold">{program.name}</p>
-                  <p className="mb-4 text-xs text-muted-foreground">
-                    Reward: {program.reward_description}
+                  <p className="text-sm font-semibold">Reward: {program.reward_description}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {card.stamps} / {program.stamps_required} visits
                   </p>
-                  <StampGrid
-                    stamps={card.stamps}
-                    required={program.stamps_required}
-                    animateLast={justStamped}
-                  />
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, (card.stamps / program.stamps_required) * 100)}%` }}
+                    />
+                  </div>
                   <p className="mt-3 text-center text-sm font-semibold text-primary">
                     {remaining === 0
                       ? "Your reward is ready!"
                       : `${remaining} more ${remaining === 1 ? "visit" : "visits"} to unlock your reward`}
                   </p>
-                  {business.stamp_mode === "SELF_SCAN" ? (
-                    <Button
-                      className="mt-5 h-12 w-full text-base"
-                      onClick={() => stamp.mutate()}
-                      disabled={stamp.isPending}
-                    >
-                      {stamp.isPending ? "Adding stamp…" : "Add today's stamp"}
-                    </Button>
-                  ) : (
-                    <p className="mt-5 rounded-xl bg-accent/50 p-3 text-center text-xs text-muted-foreground">
-                      Show this card at the counter — staff will add your stamp.
-                    </p>
-                  )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  This business hasn’t set up a stamp card yet. Your visits are still being
-                  recorded.
-                </p>
+                <p className="text-sm text-muted-foreground">Your visits are being recorded.</p>
               )}
+              <VisitRequestPanel customerToken={customerToken} onDecided={invalidate} />
             </div>
-
-            {campaign && (scratchAvailable || scratchResult) ? (
-              <Section title="Scratch & win" icon={Gift}>
-                {scratchResult ? (
-                  <p className="rounded-xl bg-accent/50 p-4 text-center text-sm font-semibold">
-                    {scratchResult}
-                  </p>
-                ) : (
-                  <Button
-                    className="h-12 w-full"
-                    variant="outline"
-                    onClick={() => scratch.mutate(campaign.id)}
-                    disabled={scratch.isPending}
-                  >
-                    {scratch.isPending ? "Scratching…" : `Play ${campaign.name}`}
-                  </Button>
-                )}
-              </Section>
-            ) : null}
 
             {pushClientReady() && !alertsOn ? (
               <button
@@ -432,6 +410,8 @@ function CustomerPortal() {
             </div>
           </Section>
         ) : null}
+
+        {tab === "profile" ? <ProfilePanel customerToken={customerToken} phone={customer.phone} /> : null}
       </main>
 
       {/* Bottom tab bar */}
