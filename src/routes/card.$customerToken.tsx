@@ -22,6 +22,8 @@ import {
   XCircle,
   LogOut,
   ChevronRight,
+  Facebook,
+  Phone,
 } from "lucide-react";
 import {
   getCustomerPortal,
