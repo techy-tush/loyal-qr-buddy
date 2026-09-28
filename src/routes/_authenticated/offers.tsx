@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/offers")({
       {
         name: "description",
         content:
-          "Create percentage, flat, BOGO, free-product and custom offers for the right customers.",
+          "Give a free product or a discount — manage every offer from one place.",
       },
       { property: "og:title", content: "Offers | Digital Udyam" },
       {
@@ -64,9 +64,7 @@ export const Route = createFileRoute("/_authenticated/offers")({
 const OFFER_TYPES = [
   { value: "PERCENT", label: "Percentage discount", needsValue: true, unit: "%" },
   { value: "FLAT", label: "Flat discount", needsValue: true, unit: "₹" },
-  { value: "BOGO", label: "Buy one get one", needsValue: false, unit: "" },
   { value: "FREE_PRODUCT", label: "Free product", needsValue: false, unit: "" },
-  { value: "CUSTOM", label: "Custom offer", needsValue: false, unit: "" },
 ] as const;
 
 const AUDIENCES = [
