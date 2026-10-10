@@ -28,6 +28,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { getCustomerSession } from "@/lib/customer-session";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -244,6 +246,15 @@ function Shell({ children }: { children: ReactNode }) {
                 Signed in as {role?.replace("_", " ").toLowerCase()}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  const t = getCustomerSession();
+                  if (t) navigate({ to: "/card/$customerToken", params: { customerToken: t } });
+                  else toast.info("Scan any shop's QR code to open your customer account.");
+                }}
+              >
+                <Users className="mr-2 size-4" /> Switch to my customer account
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 size-4" /> Sign out
               </DropdownMenuItem>
