@@ -10,3 +10,6 @@
 <!-- LOVABLE:END -->
 
 - The authenticated workspace uses one role-aware AppShell: a collapsible desktop sidebar and a fixed five-destination mobile bar, keeping navigation consistent across all business routes.
+- Paid add-ons live in `addons` + `business_addons`; gate features with the `addon_active()` SQL function server-side — never trust the client.
+- Visit cooldown (24h) is enforced in `stamp.server.ts` (`VISIT_COOLDOWN_MS`, `nextVisitAt`) — one source of truth for request and approval.
+- Branch limits and one-QR-per-shop are enforced by DB triggers, so UI changes cannot bypass them.

@@ -334,7 +334,7 @@ export const listPaymentsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, businesses(id, name), plans(name)",
+        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, addon_code, businesses(id, name), plans(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -453,17 +453,33 @@ export const decideUpiPayment = createServerFn({ method: "POST" })
     const { data: ok } = await context.supabase.rpc("is_super_admin");
     if (!ok) throw new Error("Platform administrators only.");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
-    const { data: p } = await db.from("payments").select("id, business_id, plan_id, cycle, status").eq("id", data.paymentId).maybeSingle();
+    const { data: p } = await db.from("payments").select("id, business_id, plan_id, addon_code, cycle, status").eq("id", data.paymentId).maybeSingle();
     if (!p || p.status !== "PENDING") throw new Error("Payment not pending.");
     if (!data.approve) {
       await db.from("payments").update({ status: "FAILED" }).eq("id", p.id);
       return { ok: true };
     }
-    const { invoiceNumber, periodEnd } = await import("@/lib/billing.server");
-    await db.from("payments").update({ status: "SUCCESS", invoice_number: invoiceNumber() }).eq("id", p.id).eq("status", "PENDING");
-    const cycle = p.cycle === "YEARLY" ? "YEARLY" : "MONTHLY";
-    const patch = { status: "ACTIVE" as const, provider: "upi", current_period_end: periodEnd(cycle), ...(p.plan_id ? { plan_id: p.plan_id } : {}) };
-    const { data: sub } = await db.from("subscriptions").select("id").eq("business_id", p.business_id).maybeSingle();
+    const { invoiceNumber } = await import("@/lib/billing.server");
+    const { data: marked } = await db.from("payments").update({ status: "SUCCESS", invoice_number: invoiceNumber() }).eq("id", p.id).eq("status", "PENDING").select("id");
+    if (!marked?.length) throw new Error("Payment already processed.");
+    // Renewals extend from the later of now or the current expiry.
+    const extend = (current: string | null | undefined, months: number) => {
+      const base = new Date(Math.max(Date.now(), current ? new Date(current).getTime() : 0));
+      base.setUTCMonth(base.getUTCMonth() + months);
+      return base.toISOString();
+    };
+    if (p.addon_code) {
+      const { data: existing } = await db.from("business_addons").select("id, expires_at").eq("business_id", p.business_id).eq("addon_code", p.addon_code).maybeSingle();
+      const expires_at = extend(existing?.expires_at, 12);
+      if (existing) await db.from("business_addons").update({ status: "ACTIVE", expires_at, updated_at: new Date().toISOString() }).eq("id", existing.id);
+      else await db.from("business_addons").insert({ business_id: p.business_id, addon_code: p.addon_code, status: "ACTIVE", expires_at });
+      return { ok: true };
+    }
+    const { data: plan } = p.plan_id ? await db.from("plans").select("duration_months").eq("id", p.plan_id).maybeSingle() : { data: null };
+    const months = plan?.duration_months ?? 12;
+    const { data: sub } = await db.from("subscriptions").select("id, plan_id, current_period_end, status").eq("business_id", p.business_id).maybeSingle();
+    const keep = sub && sub.status === "ACTIVE" && sub.plan_id === p.plan_id ? sub.current_period_end : null;
+    const patch = { status: "ACTIVE" as const, provider: "upi", current_period_end: extend(keep, months), ...(p.plan_id ? { plan_id: p.plan_id } : {}) };
     if (sub) await db.from("subscriptions").update(patch).eq("id", sub.id);
     else if (p.plan_id) await db.from("subscriptions").insert({ business_id: p.business_id, plan_id: p.plan_id, ...patch });
     return { ok: true };

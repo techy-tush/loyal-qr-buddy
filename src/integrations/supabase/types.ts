@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      addons: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          name: string
+          price_yearly: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name: string
+          price_yearly: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name?: string
+          price_yearly?: number
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -98,6 +125,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "branches_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_addons: {
+        Row: {
+          addon_code: string
+          business_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addon_code: string
+          business_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addon_code?: string
+          business_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_addons_addon_code_fkey"
+            columns: ["addon_code"]
+            isOneToOne: false
+            referencedRelation: "addons"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "business_addons_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -815,6 +887,7 @@ export type Database = {
       }
       payments: {
         Row: {
+          addon_code: string | null
           amount: number
           business_id: string
           created_at: string
@@ -829,6 +902,7 @@ export type Database = {
           subscription_id: string | null
         }
         Insert: {
+          addon_code?: string | null
           amount: number
           business_id: string
           created_at?: string
@@ -843,6 +917,7 @@ export type Database = {
           subscription_id?: string | null
         }
         Update: {
+          addon_code?: string | null
           amount?: number
           business_id?: string
           created_at?: string
@@ -883,7 +958,9 @@ export type Database = {
       plans: {
         Row: {
           code: string
+          contact_only: boolean
           created_at: string
+          duration_months: number
           features: Json
           id: string
           is_active: boolean
@@ -896,7 +973,9 @@ export type Database = {
         }
         Insert: {
           code: string
+          contact_only?: boolean
           created_at?: string
+          duration_months?: number
           features?: Json
           id?: string
           is_active?: boolean
@@ -909,7 +988,9 @@ export type Database = {
         }
         Update: {
           code?: string
+          contact_only?: boolean
           created_at?: string
+          duration_months?: number
           features?: Json
           id?: string
           is_active?: boolean
@@ -1073,6 +1154,32 @@ export type Database = {
             columns: ["qr_id"]
             isOneToOne: false
             referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_settings: {
+        Row: {
+          business_id: string
+          highlights: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          highlights?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          highlights?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1540,6 +1647,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      addon_active: {
+        Args: { _business_id: string; _code: string }
+        Returns: boolean
+      }
+      branch_limit_ok: { Args: { _business_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["platform_role"]

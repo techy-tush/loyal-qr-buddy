@@ -107,7 +107,7 @@ function SubscriptionPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("plans")
-        .select("id, code, name, price_monthly, price_yearly, original_price_yearly, max_branches, features, sort_order")
+        .select("id, code, name, price_monthly, price_yearly, original_price_yearly, max_branches, features, sort_order, duration_months, contact_only")
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
@@ -256,10 +256,10 @@ function SubscriptionPage() {
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Plans</h2>
-        <Badge variant="secondary">Limited-time yearly offer</Badge>
+        <Badge variant="secondary">Same features — pick your duration</Badge>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
         {plansQuery.isLoading
           ? Array.from({ length: 2 }).map((_, i) => (
               <Skeleton key={i} className="h-72 w-full rounded-2xl" />
@@ -268,7 +268,7 @@ function SubscriptionPage() {
               const isCurrent = currentPlan?.id === plan.id;
               const price = Number(plan.price_yearly);
               const original = Number((plan as { original_price_yearly?: number | null }).original_price_yearly ?? 0);
-              const enterprise = plan.code === "ENTERPRISE";
+              const enterprise = plan.contact_only || plan.code === "ENTERPRISE";
               const features = Array.isArray(plan.features) ? (plan.features as string[]) : [];
               return (
                 <div
@@ -280,11 +280,17 @@ function SubscriptionPage() {
                     {isCurrent ? <Badge variant="secondary">Current</Badge> : null}
                   </div>
                   <p className="mt-3 text-3xl font-extrabold">
-                    {original > price ? (
-                      <span className="mr-2 text-lg font-semibold text-muted-foreground line-through">{inr(original)}</span>
-                    ) : null}
-                    {inr(price)}
-                    <span className="text-sm font-medium text-muted-foreground">/year</span>
+                    {enterprise ? (
+                      <span className="text-xl">Contact for pricing</span>
+                    ) : (
+                      <>
+                        {original > price ? (
+                          <span className="mr-2 text-lg font-semibold text-muted-foreground line-through">{inr(original)}</span>
+                        ) : null}
+                        {inr(price)}
+                        <span className="text-sm font-medium text-muted-foreground"> / {plan.duration_months} months</span>
+                      </>
+                    )}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {plan.max_branches >= 999 ? "Unlimited branches" : `${plan.max_branches} branch${plan.max_branches === 1 ? "" : "es"}`}
@@ -304,18 +310,14 @@ function SubscriptionPage() {
                   ) : (
                     <Button
                       className="mt-5"
-                      disabled={
-                        !isOwner ||
-                        isCurrent ||
-                        busyPlan === plan.id
-                      }
+                      disabled={!isOwner || busyPlan === plan.id}
                       onClick={() => upgrade(plan.id)}
                     >
                       {isCurrent
-                        ? "Your plan"
+                        ? "Renew this plan"
                         : busyPlan === plan.id
                           ? "Opening payment…"
-                          : `Upgrade to ${plan.name}`}
+                          : `Choose ${plan.name}`}
                     </Button>
                   )}
                   {!isOwner && !enterprise ? (

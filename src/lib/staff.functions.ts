@@ -234,6 +234,13 @@ export const decideVisit = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!req) throw new Error("Request not found.");
     if (req.status !== "PENDING") throw new Error("This request was already handled.");
+    if (data.approve) {
+      const { data: sub } = await context.supabase
+        .from("subscriptions").select("status, trial_ends_at, current_period_end").eq("business_id", req.business_id).maybeSingle();
+      const until = sub?.status === "TRIAL" ? sub.trial_ends_at : sub?.current_period_end;
+      const live = sub && ["TRIAL", "ACTIVE", "CANCELLED"].includes(sub.status) && until && new Date(until) > new Date();
+      if (!live) throw new Error("Your subscription has expired. Renew from the Subscription page to approve visits.");
+    }
 
     const { error } = await context.supabase
       .from("visit_requests")

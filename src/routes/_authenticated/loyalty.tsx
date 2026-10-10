@@ -155,13 +155,20 @@ function LoyaltyPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Stamps required</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={form.stamps_required}
-                      onChange={(e) => setForm({ ...form, stamps_required: Number(e.target.value) })}
-                    />
+                    <Label>Visit target</Label>
+                    <Select
+                      value={String(form.stamps_required)}
+                      onValueChange={(v) => setForm({ ...form, stamps_required: Number(v) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 visits</SelectItem>
+                        <SelectItem value="10">10 visits</SelectItem>
+                        <SelectItem value="20">20 visits</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Reward type</Label>

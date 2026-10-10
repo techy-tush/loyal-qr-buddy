@@ -320,12 +320,20 @@ function Onboarding() {
               </p>
               <Field label="Program name" required value={program.name} onChange={(v) => setProgram({ ...program, name: v })} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Stamps required"
-                  type="number"
-                  value={String(program.stamps_required)}
-                  onChange={(v) => setProgram({ ...program, stamps_required: Number(v) })}
-                />
+                <div className="space-y-2">
+                  <Label>Visit target</Label>
+                  <Select
+                    value={String(program.stamps_required)}
+                    onValueChange={(v) => setProgram({ ...program, stamps_required: Number(v) })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 visits</SelectItem>
+                      <SelectItem value="10">10 visits</SelectItem>
+                      <SelectItem value="20">20 visits</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Reward type</Label>
                   <Select

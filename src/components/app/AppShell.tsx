@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Puzzle,
   LayoutDashboard,
   Users,
   Stamp,
@@ -26,6 +27,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { getCustomerSession } from "@/lib/customer-session";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -50,7 +53,9 @@ const navItems: NavItem[] = [
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/offers", label: "Offers", icon: Sparkles, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/rewards", label: "Rewards", icon: Gift },
-  { to: "/qr-codes", label: "QR codes", icon: QrCode },
+  { to: "/qr-codes", label: "My shop QR", icon: QrCode },
+  { to: "/addons", label: "Add-ons", icon: Puzzle, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
+  { to: "/menu-builder", label: "Digital menu", icon: UtensilsCrossed, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/loyalty", label: "Reward rule", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
@@ -240,6 +245,15 @@ function Shell({ children }: { children: ReactNode }) {
                 Signed in as {role?.replace("_", " ").toLowerCase()}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  const t = getCustomerSession();
+                  if (t) navigate({ to: "/card/$customerToken", params: { customerToken: t } });
+                  else toast.info("Scan any shop's QR code to open your customer account.");
+                }}
+              >
+                <Users className="mr-2 size-4" /> Switch to my customer account
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 size-4" /> Sign out
               </DropdownMenuItem>

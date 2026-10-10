@@ -753,6 +753,7 @@ function PaymentsTab() {
     return (
       <>
       <UpiSettingsCard />
+      <AddonPricingCard />
       <EmptyState
         icon={IndianRupee}
         title="No payments yet"
@@ -764,6 +765,7 @@ function PaymentsTab() {
   return (
     <>
       <UpiSettingsCard />
+      <AddonPricingCard />
       <div className="surface overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
@@ -785,7 +787,7 @@ function PaymentsTab() {
                 <td className="px-4 py-3 font-mono text-xs">{p.invoice_number ?? "—"}</td>
                 <td className="px-4 py-3">{inr(Number(p.amount))}</td>
                 <td className="px-4 py-3 text-xs">
-                  <p>{p.plans?.name ?? "—"} · {p.provider}</p>
+                  <p>{p.addon_code ? `Add-on: ${p.addon_code === "REVIEW_WRITER" ? "AI Review Writer" : "Digital Menu"}` : p.plans?.name ?? "—"} · {p.provider}</p>
                   <p className="font-mono text-muted-foreground">{p.provider_ref ?? "no UTR yet"}</p>
                 </td>
                 <td className="px-4 py-3">
@@ -924,6 +926,44 @@ function SupportTab() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function AddonPricingCard() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["admin-addons"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("addons").select("code, name, price_yearly, is_active").order("code");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const save = useMutation({
+    mutationFn: async (a: { code: string; price_yearly: number; is_active: boolean }) => {
+      const { error } = await supabase.from("addons").update({ price_yearly: a.price_yearly, is_active: a.is_active }).eq("code", a.code);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Add-on updated."); qc.invalidateQueries({ queryKey: ["admin-addons"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="surface mb-5 p-5">
+      <h3 className="text-sm font-semibold">Add-on pricing (per year)</h3>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        {(q.data ?? []).map((a) => (
+          <form key={a.code} className="flex items-end gap-2" onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            save.mutate({ code: a.code, price_yearly: Number(f.get("price")), is_active: f.get("active") === "on" });
+          }}>
+            <div className="flex-1 space-y-1.5"><Label>{a.name}</Label><Input name="price" type="number" min={1} defaultValue={Number(a.price_yearly)} /></div>
+            <label className="flex items-center gap-1.5 pb-2 text-xs"><input type="checkbox" name="active" defaultChecked={a.is_active} /> Active</label>
+            <Button type="submit" size="sm" disabled={save.isPending}>Save</Button>
+          </form>
+        ))}
+      </div>
+    </div>
   );
 }
 
