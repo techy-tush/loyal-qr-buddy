@@ -218,9 +218,14 @@ export const getCustomerPortal = createServerFn({ method: "GET" })
       scratchAvailable = !win;
     }
 
+    const [{ data: menuOn }, { data: reviewOn }] = await Promise.all([
+      db.rpc("addon_active", { _business_id: customer.business_id, _code: "DIGITAL_MENU" }),
+      db.rpc("addon_active", { _business_id: customer.business_id, _code: "REVIEW_WRITER" }),
+    ]);
     return {
       customer,
       business,
+      addons: { menu: Boolean(menuOn), reviewWriter: Boolean(reviewOn) },
       card,
       rewards: rewards ?? [],
       offers: offers ?? [],
@@ -385,6 +390,8 @@ export const getPublicMenu = createServerFn({ method: "GET" })
       .eq("slug", data.slug)
       .maybeSingle();
     if (!business) throw new Error("Menu not found.");
+    const { data: menuOn } = await db.rpc("addon_active", { _business_id: business.id, _code: "DIGITAL_MENU" });
+    if (!menuOn) throw new Error("This shop's digital menu is not available right now.");
     const [{ data: categories }, { data: items }] = await Promise.all([
       db.from("menu_categories").select("id, name, sort_order").eq("business_id", business.id).order("sort_order"),
       db
@@ -614,4 +621,41 @@ export const visitBusiness = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not open this shop. Please try again.");
     await ensureCard(db, biz.id, created.id);
     return { customerToken: created.access_token };
+  });
+
+/* ------------------------------ AI review writer ------------------------------ */
+
+export const generateReviewSuggestion = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      customerToken: z.string().min(8),
+      rating: z.number().int().min(1).max(5),
+      tags: z.array(z.string().max(40)).max(8).default([]),
+      language: z.enum(["English", "Hindi", "Hinglish"]).default("English"),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: customer } = await db.from("customers").select("id, business_id").eq("access_token", data.customerToken).maybeSingle();
+    if (!customer) throw new Error("Loyalty card not found.");
+    const { data: on } = await db.rpc("addon_active", { _business_id: customer.business_id, _code: "REVIEW_WRITER" });
+    if (!on) throw new Error("Review writer is not available for this shop.");
+    const [{ data: biz }, { data: rs }] = await Promise.all([
+      db.from("businesses").select("name, category, city").eq("id", customer.business_id).single(),
+      db.from("review_settings").select("highlights").eq("business_id", customer.business_id).maybeSingle(),
+    ]);
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("Review writer is temporarily unavailable.");
+    const prompt = `Write a short, natural, honest-sounding Google review (2-4 sentences, no hashtags, no emojis overload) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}. Rating: ${data.rating}/5. Customer liked: ${data.tags.join(", ") || "the overall experience"}. Shop highlights: ${rs?.highlights ?? "—"}. Match the tone to the rating. Return only the review text.`;
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages: [{ role: "user", content: prompt }] }),
+    });
+    if (res.status === 429) throw new Error("Too many requests right now. Please try again in a minute.");
+    if (!res.ok) throw new Error("Could not write a suggestion. Please try again.");
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const text = json.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("Could not write a suggestion. Please try again.");
+    return { text };
   });
