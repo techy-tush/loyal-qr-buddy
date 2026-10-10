@@ -1,6 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Puzzle,
+  UtensilsCrossed,
   LayoutDashboard,
   Users,
   Stamp,
@@ -50,7 +52,9 @@ const navItems: NavItem[] = [
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/offers", label: "Offers", icon: Sparkles, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/rewards", label: "Rewards", icon: Gift },
-  { to: "/qr-codes", label: "QR codes", icon: QrCode },
+  { to: "/qr-codes", label: "My shop QR", icon: QrCode },
+  { to: "/addons", label: "Add-ons", icon: Puzzle, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
+  { to: "/menu-builder", label: "Digital menu", icon: UtensilsCrossed, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/loyalty", label: "Reward rule", icon: Stamp, roles: ["BUSINESS_OWNER", "BUSINESS_MANAGER", "SUPER_ADMIN"] },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/branches", label: "Branches", icon: Building2, roles: ["BUSINESS_OWNER", "SUPER_ADMIN"] },
