@@ -316,7 +316,7 @@ export const listSubscriptionsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("subscriptions")
       .select(
-        "id, status, trial_ends_at, current_period_end, provider, created_at, businesses(id, name), plans(id, name, code)",
+        "id, business_id, status, trial_ends_at, current_period_end, provider, created_at, custom_max_branches, custom_price, businesses(id, name), plans(id, name, code)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -334,7 +334,7 @@ export const listPaymentsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, addon_code, businesses(id, name), plans(name)",
+        "id, amount, currency, provider, method, payment_mode, provider_ref, status, invoice_number, created_at, addon_code, businesses(id, name), plans(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
