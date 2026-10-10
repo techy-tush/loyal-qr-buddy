@@ -26,7 +26,7 @@ function publicClient() {
 }
 
 function maskEmail(email: string) {
-  const [u, d] = email.split("@");
+  const [u = "", d = ""] = email.split("@");
   return `${u.slice(0, 2)}${"•".repeat(Math.max(1, u.length - 2))}@${d}`;
 }
 

@@ -24,9 +24,10 @@ export const Route = createFileRoute("/signup")({
       { property: "og:description", content: "Launch QR loyalty for your business in minutes." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { type?: "business" | "customer" } => ({
-    type: s.type === "business" || s.type === "customer" ? (s.type as "business" | "customer") : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { type?: "business" | "customer" } => {
+    const t = s["type"];
+    return t === "business" || t === "customer" ? { type: t } : {};
+  },
   component: SignupPage,
 });
 
