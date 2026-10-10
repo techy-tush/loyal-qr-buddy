@@ -647,15 +647,35 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Review writer is temporarily unavailable.");
     const prompt = `Write a short, natural, honest-sounding Google review (2-4 sentences, no hashtags, no emojis overload) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}. Rating: ${data.rating}/5. Customer liked: ${data.tags.join(", ") || "the overall experience"}. Shop highlights: ${rs?.highlights ?? "—"}. Match the tone to the rating. Return only the review text.`;
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages: [{ role: "user", content: prompt }] }),
+      headers: { "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
+      body: JSON.stringify({ model: "openai/gpt-6-astra", input: prompt, stream: true, store: false, reasoning: { effort: "low" } }),
     });
     if (res.status === 429) throw new Error("Too many requests right now. Please try again in a minute.");
-    if (!res.ok) throw new Error("Could not write a suggestion. Please try again.");
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const text = json.choices?.[0]?.message?.content?.trim();
+    if (res.status === 402) throw new Error("Review writer is temporarily unavailable.");
+    if (!res.ok || !res.body) throw new Error("Could not write a suggestion. Please try again.");
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    let text = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(payload) as { type?: string; delta?: string };
+          if (ev.type === "response.output_text.delta" && ev.delta) text += ev.delta;
+        } catch { /* ignore partial */ }
+      }
+    }
+    text = text.trim();
     if (!text) throw new Error("Could not write a suggestion. Please try again.");
     return { text };
   });

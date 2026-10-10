@@ -24,6 +24,9 @@ import {
   ChevronRight,
   Facebook,
   Phone,
+  UtensilsCrossed,
+  Sparkles,
+  Copy,
 } from "lucide-react";
 import {
   getCustomerPortal,
@@ -37,6 +40,7 @@ import {
   exploreBusinesses,
   getMyShops,
   visitBusiness,
+  generateReviewSuggestion,
 } from "@/lib/public.functions";
 import { registerPushDevice } from "@/lib/push.functions";
 import { enablePush, pushClientReady } from "@/lib/push-client";
@@ -178,7 +182,7 @@ function CustomerPortal() {
     );
   }
 
-  const { customer, business, card, rewards, offers, campaign, scratchAvailable } = portal.data;
+  const { customer, business, card, rewards, offers, campaign, scratchAvailable, addons } = portal.data;
   const program = card?.program as
     | { name: string; stamps_required: number; reward_description: string }
     | null
@@ -375,7 +379,17 @@ function CustomerPortal() {
                 </Button>
               </>
             )}
+            {addons.reviewWriter ? (
+              <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} />
+            ) : null}
             <div className="mt-4 grid gap-2">
+              {addons.menu ? (
+                <Button asChild variant="outline" className="h-11 justify-start">
+                  <a href={`/menu/${business.slug}`}>
+                    <UtensilsCrossed className="mr-2 size-4" /> View digital menu
+                  </a>
+                </Button>
+              ) : null}
               {business.google_review_url ? (
                 <Button asChild variant="outline" className="h-11 justify-start">
                   <a href={business.google_review_url} target="_blank" rel="noreferrer">
@@ -769,6 +783,66 @@ function ShopProfile({
           <p className="text-sm font-semibold">{offers.length} offer{offers.length > 1 ? "s" : ""} running</p>
           <p className="truncate text-xs text-muted-foreground">{offers.map((o) => o.title).join(" · ")}</p>
         </button>
+      ) : null}
+    </div>
+  );
+}
+
+const REVIEW_TAGS = ["Great taste", "Friendly staff", "Quick service", "Clean place", "Good value", "Nice ambience"];
+
+function ReviewWriter({ customerToken, reviewUrl }: { customerToken: string; reviewUrl: string | null }) {
+  const gen = useServerFn(generateReviewSuggestion);
+  const [rating, setRating] = useState(5);
+  const [tags, setTags] = useState<string[]>([]);
+  const [language, setLanguage] = useState<"English" | "Hindi" | "Hinglish">("English");
+  const [text, setText] = useState("");
+  const write = useMutation({
+    mutationFn: () => gen({ data: { customerToken, rating, tags, language } }),
+    onSuccess: (r) => setText(r.text),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="mt-5 rounded-2xl border border-border bg-accent/30 p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4 text-primary" /> Write a Google review with AI</p>
+      <div className="mt-3 flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" aria-label={`${n} stars`} onClick={() => setRating(n)}>
+            <Star className={`size-6 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {REVIEW_TAGS.map((t) => (
+          <button key={t} type="button"
+            onClick={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))}
+            className={`rounded-full border px-3 py-1 text-xs ${tags.includes(t) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 flex gap-2">
+        {(["English", "Hindi", "Hinglish"] as const).map((l) => (
+          <button key={l} type="button" onClick={() => setLanguage(l)}
+            className={`rounded-lg border px-2.5 py-1 text-xs ${language === l ? "border-primary text-primary" : "border-border"}`}>{l}</button>
+        ))}
+      </div>
+      <Button className="mt-3 w-full" variant="secondary" disabled={write.isPending} onClick={() => write.mutate()}>
+        {write.isPending ? "Writing…" : text ? "Write another" : "Suggest a review"}
+      </Button>
+      {text ? (
+        <>
+          <Textarea className="mt-3" rows={5} value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(text); toast.success("Copied — paste it on Google"); }}>
+              <Copy className="mr-1.5 size-4" /> Copy
+            </Button>
+            {reviewUrl ? (
+              <Button asChild onClick={() => navigator.clipboard.writeText(text)}>
+                <a href={reviewUrl} target="_blank" rel="noreferrer">Post on Google</a>
+              </Button>
+            ) : <Button disabled>No Google link</Button>}
+          </div>
+        </>
       ) : null}
     </div>
   );
