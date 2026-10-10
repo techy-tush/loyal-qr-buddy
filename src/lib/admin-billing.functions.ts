@@ -61,7 +61,7 @@ export const createBusinessUser = createServerFn({ method: "POST" })
     const { data: biz, error: bErr } = await db.from("businesses").insert({
       owner_id: userId, name: data.businessName, slug, category: data.category || null,
       phone: data.mobile, email: data.email, address: data.address || null, city: data.city || null,
-      status: "ACTIVE", onboarding_completed: false, created_by_admin: context.userId,
+      status: "ACTIVE", onboarding_completed: true, created_by_admin: context.userId,
     }).select("id").single();
     if (bErr) throw new Error(bErr.message);
 

@@ -15,6 +15,13 @@
       "when": 1791663882514,
       "tag": "0001_billing_invoices_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791664026449,
+      "tag": "0002_lock_subscription_writes",
+      "breakpoints": true
     }
   ]
 }
