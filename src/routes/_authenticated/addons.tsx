@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { UpiPayDialog, type UpiPayment } from "@/components/app/UpiPayDialog";
 import { useBusiness } from "@/hooks/use-business";
+import { catalogLabel } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
 import { startAddonPayment } from "@/lib/billing.functions";
 
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/addons")({
   head: () => ({
     meta: [
       { title: "Add-ons | Digital Udyam" },
-      { name: "description", content: "Buy optional add-ons: AI Google Review Writer and Digital Menu." },
+      { name: "description", content: "Buy optional add-ons: AI Google Review Writer and Digital Menu / Catalog." },
       { property: "og:title", content: "Add-ons | Digital Udyam" },
       { property: "og:description", content: "Optional yearly add-ons for your shop." },
     ],
@@ -95,7 +96,7 @@ function AddonsPage() {
                   <span className="grid size-11 place-items-center rounded-xl bg-accent text-primary"><Icon className="size-5" /></span>
                   {active ? <Badge>Active</Badge> : expired ? <Badge variant="destructive">Expired</Badge> : isPending ? <Badge variant="secondary">Payment pending</Badge> : <Badge variant="outline">Not active</Badge>}
                 </div>
-                <h3 className="mt-4 font-bold">{a.name}</h3>
+                <h3 className="mt-4 font-bold">{a.code === "DIGITAL_MENU" ? catalogLabel(business?.category) : a.name}</h3>
                 <p className="mt-1 flex-1 text-sm text-muted-foreground">{a.description}</p>
                 <p className="mt-4 text-2xl font-extrabold">₹{Number(a.price_yearly)}<span className="text-sm font-medium text-muted-foreground">/year</span></p>
                 {row ? <p className="mt-1 text-xs text-muted-foreground">{active ? "Valid till" : "Expired on"} {new Date(row.expires_at).toLocaleDateString()}</p> : null}
