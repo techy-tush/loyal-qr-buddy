@@ -397,7 +397,7 @@ export const getPublicMenu = createServerFn({ method: "GET" })
     const db = await admin();
     const { data: business } = await db
       .from("businesses")
-      .select("id, name, logo_url, city, phone, whatsapp_number, instagram_url")
+      .select("id, name, logo_url, city, phone, whatsapp_number, instagram_url, category")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!business) throw new Error("Menu not found.");
@@ -407,7 +407,7 @@ export const getPublicMenu = createServerFn({ method: "GET" })
       db.from("menu_categories").select("id, name, sort_order").eq("business_id", business.id).order("sort_order"),
       db
         .from("menu_items")
-        .select("id, category_id, name, description, price, image_url, is_available, sort_order")
+        .select("id, category_id, name, description, price, image_url, is_available, sort_order, dietary_label, enquiry_enabled")
         .eq("business_id", business.id)
         .order("sort_order"),
     ]);
