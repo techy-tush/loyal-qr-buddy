@@ -216,9 +216,11 @@ export const startUpiPayment = createServerFn({ method: "POST" })
     const { data: isAdmin } = await context.supabase.rpc("is_business_admin", { _business_id: data.businessId });
     if (!isAdmin) throw new Error("Only the business owner can change the plan.");
     const { data: plan } = await context.supabase
-      .from("plans").select("id, code, name, price_monthly, price_yearly, is_active").eq("id", data.planId).maybeSingle();
+      .from("plans").select("id, code, name, price_monthly, price_yearly, is_active, contact_only").eq("id", data.planId).maybeSingle();
     if (!plan || !plan.is_active) throw new Error("That plan is not available.");
-    const amount = Number(data.cycle === "YEARLY" ? plan.price_yearly : plan.price_monthly);
+    if (plan.contact_only) throw new Error("Please contact us for multiple-branch pricing.");
+    // Plan price is a single fixed price for the plan's full duration.
+    const amount = Number(plan.price_yearly);
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("This plan has no online price. Please contact our team.");
 
     const { data: settings } = await context.supabase.from("platform_settings").select("key, value");
