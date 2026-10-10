@@ -230,6 +230,7 @@ export type Database = {
           category: string | null
           city: string | null
           created_at: string
+          created_by_admin: string | null
           daily_stamp_limit: number
           email: string | null
           facebook_url: string | null
@@ -245,6 +246,7 @@ export type Database = {
           phone: string | null
           pincode: string | null
           slug: string
+          social_links: Json
           stamp_cooldown_minutes: number
           stamp_mode: string
           state: string | null
@@ -258,6 +260,7 @@ export type Database = {
           category?: string | null
           city?: string | null
           created_at?: string
+          created_by_admin?: string | null
           daily_stamp_limit?: number
           email?: string | null
           facebook_url?: string | null
@@ -273,6 +276,7 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           slug: string
+          social_links?: Json
           stamp_cooldown_minutes?: number
           stamp_mode?: string
           state?: string | null
@@ -286,6 +290,7 @@ export type Database = {
           category?: string | null
           city?: string | null
           created_at?: string
+          created_by_admin?: string | null
           daily_stamp_limit?: number
           email?: string | null
           facebook_url?: string | null
@@ -301,6 +306,7 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           slug?: string
+          social_links?: Json
           stamp_cooldown_minutes?: number
           stamp_mode?: string
           state?: string | null
@@ -527,6 +533,87 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          billing: Json
+          business_id: string
+          created_at: string
+          discount: number
+          id: string
+          invoice_number: string
+          item_name: string
+          method: string
+          payment_id: string
+          period_end: string | null
+          period_start: string | null
+          reference: string | null
+          seller: Json
+          status: string
+          tax_amount: number
+          tax_rate: number
+          total: number
+          validity: string | null
+        }
+        Insert: {
+          amount: number
+          billing?: Json
+          business_id: string
+          created_at?: string
+          discount?: number
+          id?: string
+          invoice_number: string
+          item_name: string
+          method: string
+          payment_id: string
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string | null
+          seller?: Json
+          status?: string
+          tax_amount?: number
+          tax_rate?: number
+          total: number
+          validity?: string | null
+        }
+        Update: {
+          amount?: number
+          billing?: Json
+          business_id?: string
+          created_at?: string
+          discount?: number
+          id?: string
+          invoice_number?: string
+          item_name?: string
+          method?: string
+          payment_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string | null
+          seller?: Json
+          status?: string
+          tax_amount?: number
+          tax_rate?: number
+          total?: number
+          validity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_cards: {
         Row: {
           business_id: string
@@ -664,6 +751,8 @@ export type Database = {
           category_id: string
           created_at: string
           description: string | null
+          dietary_label: string | null
+          enquiry_enabled: boolean
           id: string
           image_url: string | null
           is_available: boolean
@@ -676,6 +765,8 @@ export type Database = {
           category_id: string
           created_at?: string
           description?: string | null
+          dietary_label?: string | null
+          enquiry_enabled?: boolean
           id?: string
           image_url?: string | null
           is_available?: boolean
@@ -688,6 +779,8 @@ export type Database = {
           category_id?: string
           created_at?: string
           description?: string | null
+          dietary_label?: string | null
+          enquiry_enabled?: boolean
           id?: string
           image_url?: string | null
           is_available?: boolean
@@ -888,6 +981,7 @@ export type Database = {
       payments: {
         Row: {
           addon_code: string | null
+          admin_notes: string | null
           amount: number
           business_id: string
           created_at: string
@@ -895,14 +989,20 @@ export type Database = {
           cycle: string | null
           id: string
           invoice_number: string | null
+          method: string
+          paid_at: string | null
+          payment_mode: string | null
           plan_id: string | null
           provider: string
           provider_ref: string | null
           status: string
           subscription_id: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           addon_code?: string | null
+          admin_notes?: string | null
           amount: number
           business_id: string
           created_at?: string
@@ -910,14 +1010,20 @@ export type Database = {
           cycle?: string | null
           id?: string
           invoice_number?: string | null
+          method?: string
+          paid_at?: string | null
+          payment_mode?: string | null
           plan_id?: string | null
           provider?: string
           provider_ref?: string | null
           status?: string
           subscription_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           addon_code?: string | null
+          admin_notes?: string | null
           amount?: number
           business_id?: string
           created_at?: string
@@ -925,11 +1031,16 @@ export type Database = {
           cycle?: string | null
           id?: string
           invoice_number?: string | null
+          method?: string
+          paid_at?: string | null
+          payment_mode?: string | null
           plan_id?: string | null
           provider?: string
           provider_ref?: string | null
           status?: string
           subscription_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -1471,12 +1582,57 @@ export type Database = {
           },
         ]
       }
+      subscription_history: {
+        Row: {
+          action: string
+          admin_id: string | null
+          business_id: string
+          created_at: string
+          id: string
+          new_value: Json
+          old_value: Json
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          new_value?: Json
+          old_value?: Json
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          new_value?: Json
+          old_value?: Json
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
+          activated_at: string | null
           business_id: string
           created_at: string
           current_period_end: string | null
+          custom_max_branches: number | null
+          custom_price: number | null
           id: string
+          notes: string | null
           plan_id: string
           provider: string | null
           status: Database["public"]["Enums"]["sub_status"]
@@ -1484,10 +1640,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_at?: string | null
           business_id: string
           created_at?: string
           current_period_end?: string | null
+          custom_max_branches?: number | null
+          custom_price?: number | null
           id?: string
+          notes?: string | null
           plan_id: string
           provider?: string | null
           status?: Database["public"]["Enums"]["sub_status"]
@@ -1495,10 +1655,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activated_at?: string | null
           business_id?: string
           created_at?: string
           current_period_end?: string | null
+          custom_max_branches?: number | null
+          custom_price?: number | null
           id?: string
+          notes?: string | null
           plan_id?: string
           provider?: string | null
           status?: Database["public"]["Enums"]["sub_status"]
@@ -1662,6 +1826,7 @@ export type Database = {
       is_business_admin: { Args: { _business_id: string }; Returns: boolean }
       is_business_member: { Args: { _business_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      next_invoice_number: { Args: never; Returns: string }
       security_policy_report: {
         Args: never
         Returns: {
