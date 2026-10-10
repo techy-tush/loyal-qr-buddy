@@ -190,7 +190,7 @@ export const getCustomerPortal = createServerFn({ method: "GET" })
       await Promise.all([
         db
           .from("businesses")
-          .select("id, name, slug, logo_url, category, address, city, phone, google_review_url, instagram_url, whatsapp_number, facebook_url, google_maps_url, stamp_mode")
+          .select("id, name, slug, logo_url, category, address, city, phone, google_review_url, instagram_url, whatsapp_number, facebook_url, google_maps_url, social_links, stamp_mode")
           .eq("id", customer.business_id)
           .single(),
         db
