@@ -1,3 +1,4 @@
+import { indianPhone, pastDate } from "@/lib/validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -74,10 +75,10 @@ export const joinLoyalty = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(4),
-        full_name: z.string().max(80).optional().or(z.literal("")),
-        phone: z.string().trim().min(6).max(20),
-        email: z.string().email().optional().or(z.literal("")),
-        dob: z.string().optional().or(z.literal("")),
+        full_name: z.string().trim().max(80).optional().or(z.literal("")),
+        phone: indianPhone,
+        email: z.string().trim().toLowerCase().email("Enter a valid email").max(120).optional().or(z.literal("")),
+        dob: pastDate.optional().or(z.literal("")),
         anniversary: z.string().optional().or(z.literal("")),
         marketing_consent: z.boolean().default(false),
       })
@@ -91,14 +92,24 @@ export const joinLoyalty = createServerFn({ method: "POST" })
       .eq("token", data.token)
       .maybeSingle();
     if (!qr || !qr.is_active) throw new Error("This QR code is not valid.");
+    const ten = data.phone.slice(3);
+    const variants = [data.phone, ten, `91${ten}`, `0${ten}`];
 
     const { data: existing } = await db
       .from("customers")
       .select("id, access_token")
       .eq("business_id", qr.business_id)
-      .eq("phone", data.phone)
+      .in("phone", variants)
+      .limit(1)
       .maybeSingle();
-
+    if (!existing) {
+      const { data: known } = await db.from("customers").select("id").in("phone", variants).limit(1).maybeSingle();
+      if (!known) {
+        if (!data.full_name || data.full_name.length < 2 || !/^[\p{L} .'-]+$/u.test(data.full_name))
+          return { needsDetails: true as const, customerToken: null };
+        if (!data.email) return { needsDetails: true as const, customerToken: null };
+      }
+    }
     let customerId = existing?.id;
     let accessToken = existing?.access_token;
 
@@ -107,7 +118,7 @@ export const joinLoyalty = createServerFn({ method: "POST" })
       const { data: other } = await db
         .from("customers")
         .select("full_name, email, dob, anniversary, marketing_consent")
-        .eq("phone", data.phone)
+        .in("phone", variants)
         .order("created_at")
         .limit(1)
         .maybeSingle();
@@ -157,7 +168,7 @@ export const joinLoyalty = createServerFn({ method: "POST" })
 
     // The scan itself was already counted when the QR page opened — don't count it twice.
 
-    return { customerToken: accessToken! };
+    return { needsDetails: false as const, customerToken: accessToken! };
   });
 
 /* ------------------------------ Customer portal ------------------------------ */

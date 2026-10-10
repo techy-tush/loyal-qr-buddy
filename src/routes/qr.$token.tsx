@@ -10,6 +10,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { normalizeIndianPhone } from "@/lib/validation";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -41,8 +42,10 @@ function QrLandingPage() {
   const [session, setSession] = useState<string | null>(null);
   useEffect(() => setSession(getCustomerSession()), []);
   const [showForm, setShowForm] = useState(false);
+  const [needDetails, setNeedDetails] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
+    email: "",
     phone: "",
     dob: "",
     anniversary: "",
@@ -56,8 +59,21 @@ function QrLandingPage() {
   });
 
   const join = useMutation({
-    mutationFn: () => joinFn({ data: { ...form, token } }),
+    mutationFn: () => {
+      if (!normalizeIndianPhone(form.phone)) throw new Error("Enter a valid Indian mobile number (10 digits).");
+      if (needDetails) {
+        if (form.full_name.trim().length < 2) throw new Error("Please enter your full name.");
+        if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) throw new Error("Please enter a valid email.");
+        if (form.dob && new Date(form.dob) > new Date()) throw new Error("Date of birth cannot be in the future.");
+      }
+      return joinFn({ data: { ...form, token } });
+    },
     onSuccess: (res) => {
+      if (res.needsDetails || !res.customerToken) {
+        setNeedDetails(true);
+        toast.message("New here? Add your name and email to create your card.");
+        return;
+      }
       setCustomerSession(res.customerToken);
       toast.success("You're in! Here's your loyalty card.");
       navigate({ to: "/card/$customerToken", params: { customerToken: res.customerToken } });
@@ -177,9 +193,26 @@ function QrLandingPage() {
                   required
                   inputMode="tel"
                   value={form.phone}
+                  placeholder="+91 98xxxxxxxx"
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 />
               </div>
+              {needDetails ? (
+                <>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="fn">Full name *</Label>
+                    <Input id="fn" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="em">Email *</Label>
+                    <Input id="em" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dob">Date of birth (optional)</Label>
+                    <Input id="dob" type="date" max={new Date().toISOString().slice(0, 10)} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
+                  </div>
+                </>
+              ) : null}
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Checkbox
                   checked={form.marketing_consent}
@@ -188,7 +221,7 @@ function QrLandingPage() {
                 Send me offers, birthday treats and reward reminders.
               </label>
               <Button type="submit" size="lg" disabled={join.isPending}>
-                {join.isPending ? "Creating your card…" : "Continue"}
+                {join.isPending ? "Please wait…" : needDetails ? "Create my card" : "Continue"}
               </Button>
             </form>
           )}
