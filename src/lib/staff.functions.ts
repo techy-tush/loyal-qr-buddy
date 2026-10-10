@@ -112,7 +112,7 @@ export const findCustomerByPhone = createServerFn({ method: "POST" })
       .from("customers")
       .select("id, full_name, phone, total_visits, last_visit_at")
       .eq("business_id", data.businessId)
-      .in("phone", phoneVariants(data.phone))
+      .in("phone", phoneVariants(data.phone)).limit(1)
       .maybeSingle();
     if (!customer) throw new Error("No customer found with that phone number.");
 
