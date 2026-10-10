@@ -1,3 +1,4 @@
+import { SOCIAL_KEYS, catalogLabel, safeHttpsUrl, type SocialLinks } from "@/lib/validation";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clearCustomerSession, setCustomerSession } from "@/lib/customer-session";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,6 +28,13 @@ import {
   UtensilsCrossed,
   Sparkles,
   Copy,
+  Check,
+  Youtube,
+  Users,
+  Send,
+  Twitter,
+  Linkedin,
+  Globe,
 } from "lucide-react";
 import {
   getCustomerPortal,
@@ -233,22 +241,17 @@ function CustomerPortal() {
       <main className="mx-auto w-full max-w-md space-y-4 px-4 pb-28 pt-4">
         {tab === "card" ? (
           <>
-            <MyShops customerToken={customerToken} currentBusinessId={business.id} onExplore={() => setTab("explore")} />
-            <ShopProfile business={business} offers={offers} onOffers={() => setTab("offers")} />
+            {/* 1. Stamp card */}
             <div className="surface p-5">
               {card && program ? (
                 <>
-                  <p className="text-sm font-semibold">Reward: {program.reward_description}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {card.stamps} / {program.stamps_required} visits
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{business.name}</p>
+                  <p className="mt-1 text-sm font-semibold">Reward: {program.reward_description}</p>
+                  <StampCircles done={card.stamps} total={program.stamps_required} />
+                  <p className="mt-3 text-center text-sm font-bold">
+                    {Math.min(card.stamps, program.stamps_required)}/{program.stamps_required} Visits Completed
                   </p>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${Math.min(100, (card.stamps / program.stamps_required) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="mt-3 text-center text-sm font-semibold text-primary">
+                  <p className="mt-1 text-center text-xs font-semibold text-primary">
                     {remaining === 0
                       ? "Your reward is ready!"
                       : `${remaining} more ${remaining === 1 ? "visit" : "visits"} to unlock your reward`}
@@ -259,6 +262,22 @@ function CustomerPortal() {
               )}
               <VisitRequestPanel customerToken={customerToken} onDecided={invalidate} />
             </div>
+
+            {/* 2. Google review actions */}
+            {addons.reviewWriter ? (
+              <div className="surface p-5 pt-0">
+                <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} category={business.category ?? ""} />
+              </div>
+            ) : business.google_review_url ? (
+              <Button asChild size="lg" variant="outline" className="w-full">
+                <a href={business.google_review_url} target="_blank" rel="noopener noreferrer"><Star className="mr-2 size-4" /> Write a Google review</a>
+              </Button>
+            ) : null}
+
+            {/* 3–5. Social links, menu/catalog, location & contact */}
+            <ShopProfile business={business} offers={offers} onOffers={() => setTab("offers")} menu={addons.menu ? { href: `/menu/${business.slug}`, label: catalogLabel(business.category) } : null} />
+
+            <MyShops customerToken={customerToken} currentBusinessId={business.id} onExplore={() => setTab("explore")} />
 
             {pushClientReady() && !alertsOn ? (
               <button
@@ -380,13 +399,13 @@ function CustomerPortal() {
               </>
             )}
             {addons.reviewWriter ? (
-              <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} />
+              <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} category={business.category ?? ""} />
             ) : null}
             <div className="mt-4 grid gap-2">
               {addons.menu ? (
                 <Button asChild variant="outline" className="h-11 justify-start">
                   <a href={`/menu/${business.slug}`}>
-                    <UtensilsCrossed className="mr-2 size-4" /> View digital menu
+                    <UtensilsCrossed className="mr-2 size-4" /> View {catalogLabel(business.category).toLowerCase()}
                   </a>
                 </Button>
               ) : null}
@@ -739,66 +758,126 @@ function MyShops({ customerToken, currentBusinessId, onExplore }: { customerToke
   );
 }
 
-function ShopProfile({
-  business,
-  offers,
-  onOffers,
-}: {
-  business: { name: string; category?: string | null; address?: string | null; city?: string | null; phone?: string | null; google_review_url: string | null; instagram_url: string | null; whatsapp_number: string | null; facebook_url?: string | null; google_maps_url?: string | null };
-  offers: { id: string; title: string; description: string | null }[];
-  onOffers: () => void;
-}) {
-  const mapsUrl =
-    business.google_maps_url ||
-    (business.address || business.city
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.name} ${business.address ?? ""} ${business.city ?? ""}`)}`
-      : null);
-  const links = [
-    mapsUrl ? { href: mapsUrl, label: "Location", icon: MapPin } : null,
-    business.instagram_url ? { href: business.instagram_url, label: "Instagram", icon: Instagram } : null,
-    business.facebook_url ? { href: business.facebook_url, label: "Facebook", icon: Facebook } : null,
-    business.whatsapp_number ? { href: `https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}`, label: "WhatsApp", icon: MessageCircle } : null,
-    business.google_review_url ? { href: business.google_review_url, label: "Review", icon: Star } : null,
-    business.phone ? { href: `tel:${business.phone}`, label: "Call", icon: Phone } : null,
-  ].filter(Boolean) as { href: string; label: string; icon: typeof MapPin }[];
+function StampCircles({ done, total }: { done: number; total: number }) {
+  const cols = total <= 5 ? "grid-cols-5" : "grid-cols-5 sm:grid-cols-10";
   return (
-    <div className="surface p-5">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">Shop profile</p>
-      <p className="mt-1 font-display text-lg font-bold">{business.name}</p>
-      {business.category || business.city ? (
-        <p className="text-xs text-muted-foreground">{[business.category, business.address, business.city].filter(Boolean).join(" · ")}</p>
-      ) : null}
-      {links.length ? (
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {links.map((l) => (
-            <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-xs font-semibold transition hover:bg-accent">
-              <span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><l.icon className="size-5" /></span>
-              {l.label}
-            </a>
-          ))}
-        </div>
-      ) : null}
-      {offers.length ? (
-        <button type="button" onClick={onOffers} className="mt-4 w-full rounded-xl bg-accent p-3 text-left">
-          <p className="text-sm font-semibold">{offers.length} offer{offers.length > 1 ? "s" : ""} running</p>
-          <p className="truncate text-xs text-muted-foreground">{offers.map((o) => o.title).join(" · ")}</p>
-        </button>
-      ) : null}
+    <div className={`mt-4 grid ${cols} gap-2.5`}>
+      {Array.from({ length: total }).map((_, i) => {
+        const filled = i < done;
+        return (
+          <span
+            key={i}
+            aria-label={filled ? `Visit ${i + 1} done` : `Visit ${i + 1} remaining`}
+            className={`mx-auto grid aspect-square w-full max-w-12 place-items-center rounded-full border-2 text-xs font-bold ${filled ? "border-primary bg-primary text-primary-foreground" : "border-dashed border-border text-muted-foreground"}`}
+          >
+            {filled ? <Check className="size-4" /> : i + 1}
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-const REVIEW_TAGS = ["Great taste", "Friendly staff", "Quick service", "Clean place", "Good value", "Nice ambience"];
+const SOCIAL_ICON: Record<string, typeof MapPin> = {
+  youtube: Youtube, google_maps: MapPin, google_reviews: Star, facebook: Facebook, instagram: Instagram,
+  whatsapp: MessageCircle, whatsapp_group: Users, whatsapp_community: Users, telegram: Send, x: Twitter, linkedin: Linkedin,
+};
 
-function ReviewWriter({ customerToken, reviewUrl }: { customerToken: string; reviewUrl: string | null }) {
+function ShopProfile({
+  business,
+  offers,
+  onOffers,
+  menu,
+}: {
+  business: { name: string; category?: string | null; address?: string | null; city?: string | null; phone?: string | null; google_review_url: string | null; instagram_url: string | null; whatsapp_number: string | null; facebook_url?: string | null; google_maps_url?: string | null; social_links?: unknown };
+  offers: { id: string; title: string; description: string | null }[];
+  onOffers: () => void;
+  menu: { href: string; label: string } | null;
+}) {
+  const social = (business.social_links ?? {}) as SocialLinks;
+  const links: { href: string; label: string; icon: typeof MapPin }[] = [];
+  const seen = new Set<string>();
+  for (const [key, label] of SOCIAL_KEYS) {
+    const v = social[key];
+    const url = v?.enabled && v.url ? safeHttpsUrl(v.url) : null;
+    if (url) { links.push({ href: url, label, icon: SOCIAL_ICON[key] ?? Globe }); seen.add(key); }
+  }
+  // Older single fields, if not already in the new list.
+  if (!seen.has("instagram") && business.instagram_url) links.push({ href: business.instagram_url, label: "Instagram", icon: Instagram });
+  if (!seen.has("facebook") && business.facebook_url) links.push({ href: business.facebook_url, label: "Facebook", icon: Facebook });
+  if (!seen.has("whatsapp") && business.whatsapp_number) links.push({ href: `https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}`, label: "WhatsApp", icon: MessageCircle });
+  const mapsUrl =
+    (seen.has("google_maps") ? null : business.google_maps_url) ||
+    (!seen.has("google_maps") && (business.address || business.city)
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.name} ${business.address ?? ""} ${business.city ?? ""}`)}`
+      : null);
+  return (
+    <>
+      {links.length ? (
+        <div className="surface p-5">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Follow &amp; connect</p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {links.map((l) => (
+              <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center text-xs font-semibold transition hover:bg-accent">
+                <span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><l.icon className="size-5" /></span>
+                {l.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {menu ? (
+        <Button asChild size="lg" className="w-full">
+          <a href={menu.href}><UtensilsCrossed className="mr-2 size-4" /> View {menu.label}</a>
+        </Button>
+      ) : null}
+      <div className="surface p-5">
+        <p className="text-xs font-semibold uppercase text-muted-foreground">About the shop</p>
+        <p className="mt-1 font-display text-lg font-bold">{business.name}</p>
+        {business.category || business.address || business.city ? (
+          <p className="text-xs text-muted-foreground">{[business.category, business.address, business.city].filter(Boolean).join(" · ")}</p>
+        ) : null}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {mapsUrl ? <Button asChild variant="outline" size="sm"><a href={mapsUrl} target="_blank" rel="noopener noreferrer"><MapPin className="mr-1.5 size-4" /> Location</a></Button> : null}
+          {business.phone ? <Button asChild variant="outline" size="sm"><a href={`tel:${business.phone}`}><Phone className="mr-1.5 size-4" /> Call</a></Button> : null}
+        </div>
+        {offers.length ? (
+          <button type="button" onClick={onOffers} className="mt-4 w-full rounded-xl bg-accent p-3 text-left">
+            <p className="text-sm font-semibold">{offers.length} offer{offers.length > 1 ? "s" : ""} running</p>
+            <p className="truncate text-xs text-muted-foreground">{offers.map((o) => o.title).join(" · ")}</p>
+          </button>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+const TAGS_BY_KIND: [RegExp, string[]][] = [
+  [/restaurant|cafe|café|coffee|bakery|food|dhaba|sweet|pizza/i, ["Tasty food", "Friendly staff", "Quick service", "Clean place", "Good value", "Nice ambience"]],
+  [/salon|beauty|spa|parlour|parlor|barber/i, ["Great haircut", "Skilled stylist", "Polite staff", "Hygienic", "On-time appointment", "Relaxing"]],
+  [/car|auto|wash|garage|detail/i, ["Spotless cleaning", "Quick turnaround", "Careful with vehicle", "Good detailing", "Helpful staff", "Fair price"]],
+  [/retail|store|shop|mart|boutique|furniture|electronics/i, ["Good selection", "Helpful staff", "Easy shopping", "Fair prices", "Quality products"]],
+  [/clinic|health|hospital|dental|wellness|gym|fitness|physio/i, ["Easy appointment", "Clean facility", "Clear communication", "Courteous staff", "Short wait"]],
+  [/school|coaching|tuition|academy|education|class/i, ["Good teaching", "Supportive staff", "Good environment", "Well organised"]],
+  [/hotel|resort|stay|hospitality|guest/i, ["Clean rooms", "Warm hospitality", "Good facilities", "Helpful staff", "Comfortable stay"]],
+];
+function reviewTags(category: string) {
+  return TAGS_BY_KIND.find(([re]) => re.test(category))?.[1] ?? ["Friendly staff", "Good service", "Clean place", "Good value", "Would recommend"];
+}
+
+
+function ReviewWriter({ customerToken, reviewUrl, category }: { customerToken: string; reviewUrl: string | null; category: string }) {
   const gen = useServerFn(generateReviewSuggestion);
   const [rating, setRating] = useState(5);
   const [tags, setTags] = useState<string[]>([]);
+  const [experience, setExperience] = useState("");
   const [language, setLanguage] = useState<"English" | "Hindi" | "Hinglish">("English");
+  const [drafts, setDrafts] = useState<string[]>([]);
   const [text, setText] = useState("");
+  const TAGS = reviewTags(category);
   const write = useMutation({
-    mutationFn: () => gen({ data: { customerToken, rating, tags, language } }),
-    onSuccess: (r) => setText(r.text),
+    mutationFn: () => gen({ data: { customerToken, rating, tags, language, experience } }),
+    onSuccess: (r) => { setDrafts(r.drafts ?? [r.text]); setText(""); },
     onError: (e: Error) => toast.error(e.message),
   });
   return (
@@ -812,7 +891,7 @@ function ReviewWriter({ customerToken, reviewUrl }: { customerToken: string; rev
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {REVIEW_TAGS.map((t) => (
+        {TAGS.map((t) => (
           <button key={t} type="button"
             onClick={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))}
             className={`rounded-full border px-3 py-1 text-xs ${tags.includes(t) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
@@ -820,6 +899,7 @@ function ReviewWriter({ customerToken, reviewUrl }: { customerToken: string; rev
           </button>
         ))}
       </div>
+      <Textarea className="mt-3" rows={2} maxLength={500} placeholder="Your experience in a few words (optional)" value={experience} onChange={(e) => setExperience(e.target.value)} />
       <div className="mt-3 flex gap-2">
         {(["English", "Hindi", "Hinglish"] as const).map((l) => (
           <button key={l} type="button" onClick={() => setLanguage(l)}
@@ -827,21 +907,31 @@ function ReviewWriter({ customerToken, reviewUrl }: { customerToken: string; rev
         ))}
       </div>
       <Button className="mt-3 w-full" variant="secondary" disabled={write.isPending} onClick={() => write.mutate()}>
-        {write.isPending ? "Writing…" : text ? "Write another" : "Suggest a review"}
+        {write.isPending ? "Writing…" : drafts.length ? "More suggestions" : "Suggest reviews"}
       </Button>
+      {drafts.length && !text ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-muted-foreground">Pick one to edit:</p>
+          {drafts.map((d, i) => (
+            <button key={i} type="button" onClick={() => setText(d)} className="w-full rounded-xl border border-border bg-background p-3 text-left text-sm hover:border-primary">{d}</button>
+          ))}
+        </div>
+      ) : null}
       {text ? (
         <>
           <Textarea className="mt-3" rows={5} value={text} onChange={(e) => setText(e.target.value)} />
+          <button type="button" className="mt-1 text-xs text-primary underline" onClick={() => setText("")}>Back to drafts</button>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => { navigator.clipboard.writeText(text); toast.success("Copied — paste it on Google"); }}>
               <Copy className="mr-1.5 size-4" /> Copy
             </Button>
             {reviewUrl ? (
               <Button asChild onClick={() => navigator.clipboard.writeText(text)}>
-                <a href={reviewUrl} target="_blank" rel="noreferrer">Post on Google</a>
+                <a href={reviewUrl} target="_blank" rel="noopener noreferrer">Post on Google</a>
               </Button>
             ) : <Button disabled>No Google link</Button>}
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">You post it yourself. Nothing is published automatically.</p>
         </>
       ) : null}
     </div>

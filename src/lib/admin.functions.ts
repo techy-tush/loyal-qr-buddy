@@ -316,7 +316,7 @@ export const listSubscriptionsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("subscriptions")
       .select(
-        "id, status, trial_ends_at, current_period_end, provider, created_at, businesses(id, name), plans(id, name, code)",
+        "id, business_id, status, trial_ends_at, current_period_end, provider, created_at, custom_max_branches, custom_price, businesses(id, name), plans(id, name, code)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -334,7 +334,7 @@ export const listPaymentsAdmin = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, amount, currency, provider, provider_ref, status, invoice_number, created_at, addon_code, businesses(id, name), plans(name)",
+        "id, amount, currency, provider, method, payment_mode, provider_ref, status, invoice_number, created_at, addon_code, businesses(id, name), plans(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
@@ -453,35 +453,15 @@ export const decideUpiPayment = createServerFn({ method: "POST" })
     const { data: ok } = await context.supabase.rpc("is_super_admin");
     if (!ok) throw new Error("Platform administrators only.");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
-    const { data: p } = await db.from("payments").select("id, business_id, plan_id, addon_code, cycle, status").eq("id", data.paymentId).maybeSingle();
-    if (!p || p.status !== "PENDING") throw new Error("Payment not pending.");
     if (!data.approve) {
-      await db.from("payments").update({ status: "FAILED" }).eq("id", p.id);
+      const { data: p } = await db.from("payments").select("id, business_id, status").eq("id", data.paymentId).maybeSingle();
+      if (!p || !["PENDING", "VERIFICATION_REQUIRED"].includes(p.status)) throw new Error("Payment not pending.");
+      await db.from("payments").update({ status: "FAILED", verified_by: context.userId, verified_at: new Date().toISOString() }).eq("id", p.id);
+      await db.from("audit_logs").insert({ business_id: p.business_id, actor_id: context.userId, action: "PAYMENT_REJECTED", entity: "payments", entity_id: p.id, meta: {} });
       return { ok: true };
     }
-    const { invoiceNumber } = await import("@/lib/billing.server");
-    const { data: marked } = await db.from("payments").update({ status: "SUCCESS", invoice_number: invoiceNumber() }).eq("id", p.id).eq("status", "PENDING").select("id");
-    if (!marked?.length) throw new Error("Payment already processed.");
-    // Renewals extend from the later of now or the current expiry.
-    const extend = (current: string | null | undefined, months: number) => {
-      const base = new Date(Math.max(Date.now(), current ? new Date(current).getTime() : 0));
-      base.setUTCMonth(base.getUTCMonth() + months);
-      return base.toISOString();
-    };
-    if (p.addon_code) {
-      const { data: existing } = await db.from("business_addons").select("id, expires_at").eq("business_id", p.business_id).eq("addon_code", p.addon_code).maybeSingle();
-      const expires_at = extend(existing?.expires_at, 12);
-      if (existing) await db.from("business_addons").update({ status: "ACTIVE", expires_at, updated_at: new Date().toISOString() }).eq("id", existing.id);
-      else await db.from("business_addons").insert({ business_id: p.business_id, addon_code: p.addon_code, status: "ACTIVE", expires_at });
-      return { ok: true };
-    }
-    const { data: plan } = p.plan_id ? await db.from("plans").select("duration_months").eq("id", p.plan_id).maybeSingle() : { data: null };
-    const months = plan?.duration_months ?? 12;
-    const { data: sub } = await db.from("subscriptions").select("id, plan_id, current_period_end, status").eq("business_id", p.business_id).maybeSingle();
-    const keep = sub && sub.status === "ACTIVE" && sub.plan_id === p.plan_id ? sub.current_period_end : null;
-    const patch = { status: "ACTIVE" as const, provider: "upi", current_period_end: extend(keep, months), ...(p.plan_id ? { plan_id: p.plan_id } : {}) };
-    if (sub) await db.from("subscriptions").update(patch).eq("id", sub.id);
-    else if (p.plan_id) await db.from("subscriptions").insert({ business_id: p.business_id, plan_id: p.plan_id, ...patch });
+    const { activateVerifiedPayment } = await import("@/lib/payment-activation.server");
+    await activateVerifiedPayment(db as any, { paymentId: data.paymentId, adminId: context.userId });
     return { ok: true };
   });
 

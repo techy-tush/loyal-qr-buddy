@@ -8,6 +8,20 @@
       "when": 1791660666281,
       "tag": "0000_plans_addons_single_qr",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791663882514,
+      "tag": "0001_billing_invoices_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791664026449,
+      "tag": "0002_lock_subscription_writes",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { indianPhone, pastDate } from "@/lib/validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -74,10 +75,10 @@ export const joinLoyalty = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(4),
-        full_name: z.string().max(80).optional().or(z.literal("")),
-        phone: z.string().trim().min(6).max(20),
-        email: z.string().email().optional().or(z.literal("")),
-        dob: z.string().optional().or(z.literal("")),
+        full_name: z.string().trim().max(80).optional().or(z.literal("")),
+        phone: indianPhone,
+        email: z.string().trim().toLowerCase().email("Enter a valid email").max(120).optional().or(z.literal("")),
+        dob: pastDate.optional().or(z.literal("")),
         anniversary: z.string().optional().or(z.literal("")),
         marketing_consent: z.boolean().default(false),
       })
@@ -91,14 +92,24 @@ export const joinLoyalty = createServerFn({ method: "POST" })
       .eq("token", data.token)
       .maybeSingle();
     if (!qr || !qr.is_active) throw new Error("This QR code is not valid.");
+    const ten = data.phone.slice(3);
+    const variants = [data.phone, ten, `91${ten}`, `0${ten}`];
 
     const { data: existing } = await db
       .from("customers")
       .select("id, access_token")
       .eq("business_id", qr.business_id)
-      .eq("phone", data.phone)
+      .in("phone", variants)
+      .limit(1)
       .maybeSingle();
-
+    if (!existing) {
+      const { data: known } = await db.from("customers").select("id").in("phone", variants).limit(1).maybeSingle();
+      if (!known) {
+        if (!data.full_name || data.full_name.length < 2 || !/^[\p{L} .'-]+$/u.test(data.full_name))
+          return { needsDetails: true as const, customerToken: null };
+        if (!data.email) return { needsDetails: true as const, customerToken: null };
+      }
+    }
     let customerId = existing?.id;
     let accessToken = existing?.access_token;
 
@@ -107,7 +118,7 @@ export const joinLoyalty = createServerFn({ method: "POST" })
       const { data: other } = await db
         .from("customers")
         .select("full_name, email, dob, anniversary, marketing_consent")
-        .eq("phone", data.phone)
+        .in("phone", variants)
         .order("created_at")
         .limit(1)
         .maybeSingle();
@@ -157,7 +168,7 @@ export const joinLoyalty = createServerFn({ method: "POST" })
 
     // The scan itself was already counted when the QR page opened — don't count it twice.
 
-    return { customerToken: accessToken! };
+    return { needsDetails: false as const, customerToken: accessToken! };
   });
 
 /* ------------------------------ Customer portal ------------------------------ */
@@ -179,7 +190,7 @@ export const getCustomerPortal = createServerFn({ method: "GET" })
       await Promise.all([
         db
           .from("businesses")
-          .select("id, name, slug, logo_url, category, address, city, phone, google_review_url, instagram_url, whatsapp_number, facebook_url, google_maps_url, stamp_mode")
+          .select("id, name, slug, logo_url, category, address, city, phone, google_review_url, instagram_url, whatsapp_number, facebook_url, google_maps_url, social_links, stamp_mode")
           .eq("id", customer.business_id)
           .single(),
         db
@@ -386,7 +397,7 @@ export const getPublicMenu = createServerFn({ method: "GET" })
     const db = await admin();
     const { data: business } = await db
       .from("businesses")
-      .select("id, name, logo_url, city, phone, whatsapp_number, instagram_url")
+      .select("id, name, logo_url, city, phone, whatsapp_number, instagram_url, category")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!business) throw new Error("Menu not found.");
@@ -396,7 +407,7 @@ export const getPublicMenu = createServerFn({ method: "GET" })
       db.from("menu_categories").select("id, name, sort_order").eq("business_id", business.id).order("sort_order"),
       db
         .from("menu_items")
-        .select("id, category_id, name, description, price, image_url, is_available, sort_order")
+        .select("id, category_id, name, description, price, image_url, is_available, sort_order, dietary_label, enquiry_enabled")
         .eq("business_id", business.id)
         .order("sort_order"),
     ]);
@@ -632,6 +643,7 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
       rating: z.number().int().min(1).max(5),
       tags: z.array(z.string().max(40)).max(8).default([]),
       language: z.enum(["English", "Hindi", "Hinglish"]).default("English"),
+      experience: z.string().trim().max(500).default(""),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -646,7 +658,20 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
     ]);
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Review writer is temporarily unavailable.");
-    const prompt = `Write a short, natural, honest-sounding Google review (2-4 sentences, no hashtags, no emojis overload) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}. Rating: ${data.rating}/5. Customer liked: ${data.tags.join(", ") || "the overall experience"}. Shop highlights: ${rs?.highlights ?? "—"}. Match the tone to the rating. Return only the review text.`;
+    const cat = (biz?.category ?? "").toLowerCase();
+    const focus =
+      /restaurant|cafe|café|coffee|bakery|food|dhaba|sweet|pizza/.test(cat) ? "food quality, taste, service, ambience, cleanliness, menu variety"
+      : /salon|beauty|spa|parlour|parlor|barber/.test(cat) ? "haircut or styling, service quality, staff behaviour, cleanliness, appointment experience"
+      : /car|auto|wash|garage|detail/.test(cat) ? "vehicle cleaning, detailing, turnaround time, vehicle care, customer service"
+      : /retail|store|shop|mart|boutique|furniture|electronics/.test(cat) ? "product selection, shopping experience, staff assistance"
+      : /clinic|health|hospital|dental|wellness|gym|fitness|physio/.test(cat) ? "appointment experience, facilities, staff communication, administrative service (no medical outcome claims, no health details)"
+      : /school|coaching|tuition|academy|education|class/.test(cat) ? "learning environment, teaching experience, facilities, staff support"
+      : /hotel|resort|stay|hospitality|guest/.test(cat) ? "cleanliness, room experience, facilities, hospitality, staff assistance"
+      : "the service and experience appropriate to this kind of business";
+    const prompt = `Write 4 different short Google review drafts (2-4 sentences each) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}.
+Customer's rating: ${data.rating}/5. Customer's own words: "${data.experience || "—"}". Things they selected: ${data.tags.join(", ") || "—"}. Shop highlights the owner listed: ${rs?.highlights ?? "—"}.
+Only talk about aspects relevant to this category: ${focus}. Do NOT invent specific experiences the customer did not mention; keep claims general where details are missing. Match the tone honestly to the rating — do not make a low rating sound positive. No hashtags, at most one emoji. Make each draft meaningfully different in structure and wording.
+Return ONLY the 4 drafts separated by a line containing exactly ===`;
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: { "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
@@ -675,7 +700,7 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
         } catch { /* ignore partial */ }
       }
     }
-    text = text.trim();
-    if (!text) throw new Error("Could not write a suggestion. Please try again.");
-    return { text };
+    const drafts = text.split(/\n?\s*===\s*\n?/).map((t) => t.trim().replace(/^(draft\s*\d+[:.)-]?|\d+[.)])\s*/i, "")).filter((t) => t.length > 10).slice(0, 4);
+    if (!drafts.length) throw new Error("Could not write a suggestion. Please try again.");
+    return { text: drafts[0], drafts };
   });

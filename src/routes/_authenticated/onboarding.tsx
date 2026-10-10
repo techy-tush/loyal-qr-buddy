@@ -166,7 +166,7 @@ function Onboarding() {
       return;
     }
 
-    // Business QR + trial subscription
+    // Business QR + unpaid subscription (activated only after verified payment)
     const { data: qr, error: qrError } = await supabase
       .from("qr_codes")
       .insert({ business_id: businessId, label: "Business QR", qr_type: "BUSINESS" })
@@ -176,14 +176,16 @@ function Onboarding() {
     const { data: plan } = await supabase
       .from("plans")
       .select("id")
-      .eq("code", "STARTER")
+      .eq("is_active", true)
+      .eq("contact_only", false)
+      .order("sort_order")
+      .limit(1)
       .maybeSingle();
     if (plan) {
       await supabase.from("subscriptions").insert({
         business_id: businessId,
         plan_id: plan.id,
-        status: "TRIAL",
-        trial_ends_at: new Date(Date.now() + 3 * 86400000).toISOString(),
+        status: "PAST_DUE",
       });
     }
     await supabase.from("businesses").update({ onboarding_completed: true }).eq("id", businessId);

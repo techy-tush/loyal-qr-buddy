@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cancelSubscription, startUpiPayment } from "@/lib/billing.functions";
 import { UpiPayDialog, type UpiPayment } from "@/components/app/UpiPayDialog";
 import { cn } from "@/lib/utils";
+import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
   head: () => ({
@@ -32,12 +33,12 @@ export const Route = createFileRoute("/_authenticated/subscription")({
       {
         name: "description",
         content:
-          "See your current plan, trial days left, renewal date and every payment receipt, and upgrade whenever you need more branches.",
+          "See your current plan, expiry date, payment status and download every invoice.",
       },
       { property: "og:title", content: "Subscription | Digital Udyam" },
       {
         property: "og:description",
-        content: "Manage your Digital Udyam plan, trial, renewals and payment history.",
+        content: "Manage your Digital Udyam plan, renewals, payments and invoices.",
       },
     ],
   }),
@@ -62,9 +63,9 @@ const statusTone: Record<string, string> = {
 };
 
 const statusLabel: Record<string, string> = {
-  TRIAL: "Free trial",
+  TRIAL: "Old trial",
   ACTIVE: "Active",
-  PAST_DUE: "Payment due",
+  PAST_DUE: "Payment pending",
   CANCELLED: "Cancelled",
   SUSPENDED: "Suspended",
 };
@@ -177,7 +178,7 @@ function SubscriptionPage() {
     <>
       <PageHeader
         title="Subscription"
-        description="Your plan, trial, renewal date and payment receipts."
+        description="Your plan, expiry date, payments and invoices."
       />
 
       {subQuery.isLoading ? (
@@ -230,13 +231,13 @@ function SubscriptionPage() {
             ) : null}
           </div>
           <StatCard
-            label="Trial remaining"
-            value={trialDays === null ? "—" : `${trialDays} day${trialDays === 1 ? "" : "s"}`}
+            label="Plan status"
+            value={sub ? statusLabel[sub.status] ?? sub.status : "Not active"}
             icon={ShieldAlert}
-            hint={sub?.trial_ends_at ? new Date(sub.trial_ends_at).toLocaleDateString() : "No trial running"}
+            hint={trialDays !== null ? `${trialDays} day(s) left` : sub?.status === "ACTIVE" ? "Paid and verified" : "Activates after payment is verified"}
           />
           <StatCard
-            label="Renews on"
+            label="Expires on"
             value={
               sub?.current_period_end
                 ? new Date(sub.current_period_end).toLocaleDateString()
@@ -375,13 +376,57 @@ function SubscriptionPage() {
                           ? "Pending"
                           : p.status === "FAILED"
                             ? "Failed"
-                            : p.status}
+                            : p.status === "VERIFICATION_REQUIRED"
+                              ? "Verification required"
+                              : p.status}
                     </Badge>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      <InvoicesSection businessId={business.id} />
+    </>
+  );
+}
+
+function InvoicesSection({ businessId }: { businessId: string }) {
+  const q = useQuery({
+    queryKey: ["invoices", businessId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  return (
+    <>
+      <h2 className="mt-8 text-lg font-bold">Invoices &amp; Billing</h2>
+      {q.isLoading ? (
+        <Skeleton className="mt-4 h-32 w-full rounded-2xl" />
+      ) : (q.data ?? []).length === 0 ? (
+        <div className="mt-4">
+          <EmptyState icon={Receipt} title="No invoices yet" description="An invoice is created automatically once your payment is verified." />
+        </div>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {q.data!.map((inv) => (
+            <div key={inv.id} className="surface flex flex-wrap items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="font-mono text-xs text-muted-foreground">{inv.invoice_number} · {new Date(inv.created_at).toLocaleDateString()}</p>
+                <p className="font-semibold">{inv.item_name}</p>
+                <p className="text-xs text-muted-foreground">{inr(Number(inv.total))} · {inv.method} · <span className="text-success">Paid</span></p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => downloadInvoicePdf(inv as any)}>Download PDF</Button>
+            </div>
+          ))}
         </div>
       )}
     </>

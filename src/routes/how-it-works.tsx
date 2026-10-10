@@ -84,7 +84,7 @@ function HowItWorks() {
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-16 text-center">
         <Button size="lg" asChild>
-          <Link to="/signup">Start your free trial</Link>
+          <Link to="/signup">Get started</Link>
         </Button>
       </section>
     </SiteShell>

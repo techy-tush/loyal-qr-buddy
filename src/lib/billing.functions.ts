@@ -254,9 +254,9 @@ export const submitUpiReference = createServerFn({ method: "POST" })
     if (!payment || payment.provider !== "upi") throw new Error("Payment not found.");
     const { data: isAdmin } = await context.supabase.rpc("is_business_admin", { _business_id: payment.business_id });
     if (!isAdmin) throw new Error("Not allowed.");
-    if (payment.status !== "PENDING") throw new Error("This payment is already processed.");
+    if (payment.status !== "PENDING" && payment.status !== "VERIFICATION_REQUIRED") throw new Error("This payment is already processed.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("payments").update({ provider_ref: data.utr.toUpperCase() }).eq("id", payment.id);
+    const { error } = await supabaseAdmin.from("payments").update({ provider_ref: data.utr.toUpperCase(), status: "VERIFICATION_REQUIRED" }).eq("id", payment.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

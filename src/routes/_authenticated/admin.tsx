@@ -58,6 +58,7 @@ import {
   setSuperAdmin,
 } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
+import { CreateUserTab, InvoicesTab, ManageSubscriptionDialog, ManualPaymentDialog } from "@/components/app/AdminBilling";
 import { useBusiness } from "@/hooks/use-business";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -153,6 +154,8 @@ function AdminPage() {
             <TabsTrigger value="plans">Plans</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+            <TabsTrigger value="create">Create user</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
 
@@ -173,6 +176,12 @@ function AdminPage() {
           </TabsContent>
           <TabsContent value="payments" className="mt-5">
             <PaymentsTab />
+          </TabsContent>
+          <TabsContent value="invoices" className="mt-5">
+            <InvoicesTab />
+          </TabsContent>
+          <TabsContent value="create" className="mt-5">
+            <CreateUserTab />
           </TabsContent>
           <TabsContent value="support" className="mt-5">
             <SupportTab />
@@ -198,7 +207,7 @@ function OverviewTab() {
     <>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Businesses" value={d.businesses} icon={Building2} hint={`${d.active} active`} />
-        <StatCard label="On free trial" value={d.trial} icon={ShieldCheck} hint={`${d.pending} pending setup`} />
+        <StatCard label="Old trials" value={d.trial} icon={ShieldCheck} hint={`${d.pending} pending setup`} />
         <StatCard label="Paying businesses" value={d.paidSubs} icon={CreditCard} hint={`${d.cancelled} cancelled`} />
         <StatCard label="Suspended" value={d.suspended} icon={Building2} />
         <StatCard label="Customers" value={d.customers} icon={Users} />
@@ -673,6 +682,7 @@ function PlansTab() {
 
 function SubscriptionsTab() {
   const [page, setPage] = useState(0);
+  const [manage, setManage] = useState<any | null>(null);
   const list = useServerFn(listSubscriptionsAdmin);
   const q = useQuery({
     queryKey: ["admin-subscriptions", page],
@@ -685,7 +695,7 @@ function SubscriptionsTab() {
       <EmptyState
         icon={CreditCard}
         title="No subscriptions yet"
-        description="Every business gets a trial subscription when it finishes setup."
+        description="Subscriptions appear when a business finishes setup or is created by an admin."
       />
     );
 
@@ -698,8 +708,9 @@ function SubscriptionsTab() {
               <th className="px-4 py-3 font-medium">Business</th>
               <th className="px-4 py-3 font-medium">Plan</th>
               <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Trial ends</th>
-              <th className="px-4 py-3 font-medium">Renews</th>
+              <th className="px-4 py-3 font-medium">Branches</th>
+              <th className="px-4 py-3 font-medium">Expires</th>
+              <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -712,25 +723,27 @@ function SubscriptionsTab() {
                     {s.status.replace("_", " ").toLowerCase()}
                   </Badge>
                 </td>
-                <td className="px-4 py-3">
-                  {s.trial_ends_at ? new Date(s.trial_ends_at).toLocaleDateString() : "—"}
-                </td>
+                <td className="px-4 py-3">{s.custom_max_branches ?? "plan"}</td>
                 <td className="px-4 py-3">
                   {s.current_period_end
                     ? new Date(s.current_period_end).toLocaleDateString()
                     : "—"}
                 </td>
+                <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => setManage(s)}>Manage</Button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <Pager page={page} total={q.data!.total} onPage={setPage} />
+      <ManageSubscriptionDialog sub={manage} onClose={() => setManage(null)} />
     </>
   );
 }
 
 function PaymentsTab() {
+  const [manualOpen, setManualOpen] = useState(false);
+  const [convert, setConvert] = useState<any | null>(null);
   const [page, setPage] = useState(0);
   const qc = useQueryClient();
   const list = useServerFn(listPaymentsAdmin);
@@ -766,6 +779,8 @@ function PaymentsTab() {
     <>
       <UpiSettingsCard />
       <AddonPricingCard />
+      <div className="mb-3 flex justify-end"><Button size="sm" onClick={() => setManualOpen(true)}>Record manual payment</Button></div>
+      <ManualPaymentDialog open={manualOpen || Boolean(convert)} convert={convert} onClose={() => { setManualOpen(false); setConvert(null); }} />
       <div className="surface overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
@@ -798,12 +813,13 @@ function PaymentsTab() {
                       p.status === "FAILED" && statusTone["SUSPENDED"],
                     )}
                   >
-                    {p.status === "SUCCESS" ? "paid" : p.status.toLowerCase()}
+                    {p.status === "SUCCESS" ? "paid" : p.status.replace("_", " ").toLowerCase()}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {p.status === "PENDING" && p.provider === "upi" ? (
+                  {["PENDING", "VERIFICATION_REQUIRED"].includes(p.status) ? (
                     <div className="flex justify-end gap-2">
+                      {p.method !== "MANUAL" ? <Button size="sm" variant="ghost" onClick={() => setConvert(p)}>To manual</Button> : null}
                       <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => decide.mutate({ paymentId: p.id, approve: false })}>Reject</Button>
                       <Button size="sm" disabled={decide.isPending} onClick={() => decide.mutate({ paymentId: p.id, approve: true })}>Confirm paid</Button>
                     </div>

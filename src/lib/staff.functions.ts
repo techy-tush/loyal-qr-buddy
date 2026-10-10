@@ -1,3 +1,4 @@
+import { phoneVariants } from "@/lib/validation";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -111,7 +112,7 @@ export const findCustomerByPhone = createServerFn({ method: "POST" })
       .from("customers")
       .select("id, full_name, phone, total_visits, last_visit_at")
       .eq("business_id", data.businessId)
-      .eq("phone", data.phone.trim())
+      .in("phone", phoneVariants(data.phone)).limit(1)
       .maybeSingle();
     if (!customer) throw new Error("No customer found with that phone number.");
 
@@ -297,7 +298,7 @@ export const redeemOffer = createServerFn({ method: "POST" })
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const { data: customer } = await db
       .from("customers").select("id, full_name")
-      .eq("business_id", offer.business_id).eq("phone", data.phone).maybeSingle();
+      .eq("business_id", offer.business_id).in("phone", phoneVariants(data.phone)).limit(1).maybeSingle();
     if (!customer) throw new Error("No customer with this mobile number at your shop.");
     const { count: mine } = await db
       .from("offer_redemptions").select("id", { count: "exact", head: true })

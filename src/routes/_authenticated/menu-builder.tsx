@@ -1,3 +1,4 @@
+import { catalogLabel, isFoodBusiness } from "@/lib/validation";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -45,7 +46,7 @@ function MenuBuilder() {
     queryFn: async () => {
       const [c, i] = await Promise.all([
         supabase.from("menu_categories").select("id, name, sort_order").eq("business_id", businessId).order("sort_order"),
-        supabase.from("menu_items").select("id, category_id, name, description, price, image_url, is_available").eq("business_id", businessId).order("sort_order"),
+        supabase.from("menu_items").select("id, category_id, name, description, price, image_url, is_available, dietary_label, enquiry_enabled").eq("business_id", businessId).order("sort_order"),
       ]);
       if (c.error) throw c.error;
       if (i.error) throw i.error;
@@ -73,7 +74,7 @@ function MenuBuilder() {
     onSuccess: refresh, onError: onErr,
   });
   const addItem = useMutation({
-    mutationFn: async (v: { category_id: string; name: string; price: number; description: string; image_url: string }) => {
+    mutationFn: async (v: { category_id: string; name: string; price: number; description: string; image_url: string; dietary_label: string | null; enquiry_enabled: boolean }) => {
       if (v.name.trim().length < 1) throw new Error("Enter item name");
       if (!(v.price >= 0)) throw new Error("Enter a valid price");
       const { error } = await supabase.from("menu_items").insert({ business_id: businessId, ...v, description: v.description || null, image_url: v.image_url || null });
@@ -96,27 +97,29 @@ function MenuBuilder() {
     onSuccess: refresh, onError: onErr,
   });
 
+  const label = catalogLabel(business?.category);
+  const food = isFoodBusiness(business?.category);
   return (
     <>
       <PageHeader
-        title="Digital menu"
-        description="Categories and items your customers see after scanning your QR."
+        title={label}
+        description={food ? "Categories and dishes your customers see after scanning your QR." : "Products or services your customers see after scanning your QR."}
         action={active.data ? (
-          <Button variant="outline" asChild><a href={`/menu/${business!.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 size-4" /> View menu</a></Button>
+          <Button variant="outline" asChild><a href={`/menu/${business!.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 size-4" /> View {label.toLowerCase()}</a></Button>
         ) : null}
       />
       {active.data === false ? (
         <div className="surface mb-5 border-warning/40 p-4 text-sm">
-          The Digital Menu add-on is not active, so customers can't see your menu.{" "}
+          The Digital Menu / Catalog add-on is not active, so customers can't see it.{" "}
           <Link to="/addons" className="font-semibold text-primary underline">Activate it for ₹149/year</Link>
         </div>
       ) : null}
       <form className="surface mb-5 flex gap-2 p-4" onSubmit={(e) => { e.preventDefault(); addCat.mutate(); }}>
-        <Input placeholder="New category (e.g. Coffee, Desserts)" value={catName} onChange={(e) => setCatName(e.target.value)} />
+        <Input placeholder={food ? "New category (e.g. Starters, Beverages)" : "New category (e.g. Hair services, Products)"} value={catName} onChange={(e) => setCatName(e.target.value)} />
         <Button type="submit" disabled={addCat.isPending}><Plus className="mr-1 size-4" /> Add</Button>
       </form>
       {menu.isLoading ? <Skeleton className="h-60 rounded-2xl" /> : (menu.data?.categories.length ?? 0) === 0 ? (
-        <EmptyState icon={UtensilsCrossed} title="No menu yet" description="Add your first category, then add items with prices." />
+        <EmptyState icon={UtensilsCrossed} title="Nothing added yet" description="Add your first category, then add items." />
       ) : (
         <div className="space-y-4">
           {menu.data!.categories.map((c) => (
@@ -130,7 +133,7 @@ function MenuBuilder() {
                   <li key={i.id} className="flex items-center gap-3 py-2">
                     {i.image_url ? <img src={i.image_url} alt="" className="size-10 rounded-lg object-cover" /> : null}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{i.name}</p>
+                      <p className="truncate text-sm font-semibold">{i.name}{i.dietary_label ? <span className="ml-2 text-xs font-medium text-muted-foreground">· {i.dietary_label}</span> : null}{i.enquiry_enabled ? <span className="ml-2 text-xs text-primary">· WhatsApp enquiry</span> : null}</p>
                       {i.description ? <p className="truncate text-xs text-muted-foreground">{i.description}</p> : null}
                     </div>
                     <span className="text-sm font-semibold">₹{Number(i.price)}</span>
@@ -140,18 +143,24 @@ function MenuBuilder() {
                 ))}
               </ul>
               <form
-                className="mt-3 grid gap-2 sm:grid-cols-[1fr_100px_1fr_1fr_auto]"
+                className="mt-3 grid gap-2 sm:grid-cols-[1fr_100px_1fr_1fr_auto_auto_auto]"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const f = new FormData(e.currentTarget);
-                  addItem.mutate({ category_id: c.id, name: String(f.get("name")), price: Number(f.get("price")), description: String(f.get("description") ?? ""), image_url: String(f.get("image") ?? "") });
+                  addItem.mutate({ category_id: c.id, name: String(f.get("name")), price: Number(f.get("price") || 0), description: String(f.get("description") ?? ""), image_url: String(f.get("image") ?? ""), dietary_label: food && f.get("dietary") ? String(f.get("dietary")) : null, enquiry_enabled: f.get("enquiry") === "on" });
                   e.currentTarget.reset();
                 }}
               >
                 <Input name="name" placeholder="Item name" required />
-                <Input name="price" type="number" min={0} step="0.01" placeholder="₹" required />
+                <Input name="price" type="number" min={0} step="0.01" placeholder={food ? "₹" : "₹ (optional)"} required={food} />
                 <Input name="description" placeholder="Description (optional)" />
                 <Input name="image" type="url" placeholder="Image URL (optional)" />
+                {food ? (
+                  <select name="dietary" className="h-10 rounded-md border border-input bg-background px-2 text-sm" defaultValue="">
+                    <option value="">Diet</option><option>Veg</option><option>Non-veg</option><option>Egg</option><option>Vegan</option><option>Jain</option>
+                  </select>
+                ) : null}
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" name="enquiry" /> WhatsApp enquiry</label>
                 <Button type="submit" variant="secondary">Add item</Button>
               </form>
             </div>

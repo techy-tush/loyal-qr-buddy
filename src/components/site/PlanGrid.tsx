@@ -73,7 +73,7 @@ export function PlanGrid() {
               ))}
             </ul>
             <Button className="mt-6 w-full" variant={i === 1 ? "default" : "outline"} asChild>
-              {plan.contact_only ? <Link to="/contact">Contact us</Link> : <Link to="/signup">Start free trial</Link>}
+              {plan.contact_only ? <Link to="/contact">Contact us</Link> : <Link to="/signup">Get started</Link>}
             </Button>
           </div>
         );
