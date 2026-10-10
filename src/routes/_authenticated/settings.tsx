@@ -52,7 +52,7 @@ function SettingsPage() {
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
       <section className="surface p-5 md:p-6"><div className="mb-5 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-md bg-accent text-primary"><Building2 className="size-5" /></span><div><h2 className="font-semibold">Business profile</h2><p className="text-sm text-muted-foreground">Used across QR pages and customer cards.</p></div></div><div className="grid gap-4 md:grid-cols-2">{field("name", "Business name")}{field("phone", "Business phone")}{field("email", "Business email")}{field("website", "Website", "https://")}<div className="md:col-span-2">{field("address", "Address")}</div>{field("city", "City")}{field("state", "State")}{field("pincode", "Pincode")}</div></section>
       <section className="surface p-5 md:p-6"><div className="mb-5 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-md bg-accent text-primary"><ShieldCheck className="size-5" /></span><div><h2 className="font-semibold">Customer links</h2><p className="text-sm text-muted-foreground">Shown only when you provide them.</p></div></div><div className="space-y-4">{field("google_review_url", "Google review URL", "https://")}{field("instagram_url", "Instagram URL", "https://")}{field("google_maps_url", "Google Maps location link", "https://maps.app.goo.gl/…")}{field("whatsapp_number", "WhatsApp number")}</div></section>
-      {business ? <SocialLinksEditor businessId={business.id} /> : null}
+      {business?.id ? <SocialLinksEditor businessId={business?.id ?? ""} /> : null}
     </div>
   </>;
 }
