@@ -11,7 +11,7 @@ export function usePlans() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("plans")
-        .select("id, code, name, price_yearly, original_price_yearly, max_branches, features, sort_order")
+        .select("id, code, name, price_yearly, original_price_yearly, max_branches, features, sort_order, duration_months, contact_only")
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
@@ -25,8 +25,8 @@ export function PlanGrid() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
-        {[0, 1].map((i) => (
+      <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-3">
+        {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-72 rounded-2xl" />
         ))}
       </div>
@@ -34,7 +34,7 @@ export function PlanGrid() {
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
+    <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-3">
       {(data ?? []).map((plan, i) => {
         const original = Number(plan.original_price_yearly ?? 0);
         const price = Number(plan.price_yearly);
@@ -48,15 +48,21 @@ export function PlanGrid() {
             }
           >
             <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-              {i === 1 ? "Best value" : "Limited-time price"}
+              {plan.contact_only ? "For chains" : i === 1 ? "Best value" : "Starter"}
             </span>
             <h3 className="font-display text-lg font-bold">{plan.name}</h3>
             <p className="mt-3">
-              {original > price ? (
-                <span className="mr-2 text-lg font-semibold text-muted-foreground line-through">₹{original}</span>
-              ) : null}
-              <span className="text-3xl font-extrabold">₹{price}</span>
-              <span className="text-sm text-muted-foreground">/year</span>
+              {plan.contact_only ? (
+                <span className="text-2xl font-extrabold">Contact for pricing</span>
+              ) : (
+                <>
+                  {original > price ? (
+                    <span className="mr-2 text-lg font-semibold text-muted-foreground line-through">₹{original}</span>
+                  ) : null}
+                  <span className="text-3xl font-extrabold">₹{price}</span>
+                  <span className="text-sm text-muted-foreground"> / {plan.duration_months} months</span>
+                </>
+              )}
             </p>
             <ul className="mt-5 space-y-2.5">
               {((plan.features as string[]) ?? []).map((f) => (
@@ -67,7 +73,7 @@ export function PlanGrid() {
               ))}
             </ul>
             <Button className="mt-6 w-full" variant={i === 1 ? "default" : "outline"} asChild>
-              <Link to="/signup">Start free trial</Link>
+              {plan.contact_only ? <Link to="/contact">Contact us</Link> : <Link to="/signup">Start free trial</Link>}
             </Button>
           </div>
         );
