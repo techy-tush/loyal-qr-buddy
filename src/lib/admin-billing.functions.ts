@@ -254,7 +254,7 @@ export const saveSellerDetails = createServerFn({ method: "POST" })
     const rows = [
       ["seller_name", data.name], ["seller_address", data.address], ["seller_gstin", data.gstin],
       ["seller_tax_rate", String(data.taxRate)], ["seller_email", data.email], ["seller_phone", data.phone],
-    ].map(([key, value]) => ({ key, value, updated_at: at }));
+    ].map(([key, value]) => ({ key: key as string, value: value as string, updated_at: at }));
     const { error } = await context.supabase.from("platform_settings").upsert(rows);
     if (error) throw new Error(error.message);
     await context.supabase.from("audit_logs").insert({ actor_id: context.userId, action: "SELLER_DETAILS_UPDATED", entity: "platform_settings", meta: {} });
