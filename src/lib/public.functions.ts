@@ -643,6 +643,7 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
       rating: z.number().int().min(1).max(5),
       tags: z.array(z.string().max(40)).max(8).default([]),
       language: z.enum(["English", "Hindi", "Hinglish"]).default("English"),
+      experience: z.string().trim().max(500).default(""),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -657,7 +658,20 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
     ]);
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("Review writer is temporarily unavailable.");
-    const prompt = `Write a short, natural, honest-sounding Google review (2-4 sentences, no hashtags, no emojis overload) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}. Rating: ${data.rating}/5. Customer liked: ${data.tags.join(", ") || "the overall experience"}. Shop highlights: ${rs?.highlights ?? "—"}. Match the tone to the rating. Return only the review text.`;
+    const cat = (biz?.category ?? "").toLowerCase();
+    const focus =
+      /restaurant|cafe|café|coffee|bakery|food|dhaba|sweet|pizza/.test(cat) ? "food quality, taste, service, ambience, cleanliness, menu variety"
+      : /salon|beauty|spa|parlour|parlor|barber/.test(cat) ? "haircut or styling, service quality, staff behaviour, cleanliness, appointment experience"
+      : /car|auto|wash|garage|detail/.test(cat) ? "vehicle cleaning, detailing, turnaround time, vehicle care, customer service"
+      : /retail|store|shop|mart|boutique|furniture|electronics/.test(cat) ? "product selection, shopping experience, staff assistance"
+      : /clinic|health|hospital|dental|wellness|gym|fitness|physio/.test(cat) ? "appointment experience, facilities, staff communication, administrative service (no medical outcome claims, no health details)"
+      : /school|coaching|tuition|academy|education|class/.test(cat) ? "learning environment, teaching experience, facilities, staff support"
+      : /hotel|resort|stay|hospitality|guest/.test(cat) ? "cleanliness, room experience, facilities, hospitality, staff assistance"
+      : "the service and experience appropriate to this kind of business";
+    const prompt = `Write 4 different short Google review drafts (2-4 sentences each) in ${data.language} for "${biz?.name}", a ${biz?.category ?? "local business"}${biz?.city ? ` in ${biz.city}` : ""}.
+Customer's rating: ${data.rating}/5. Customer's own words: "${data.experience || "—"}". Things they selected: ${data.tags.join(", ") || "—"}. Shop highlights the owner listed: ${rs?.highlights ?? "—"}.
+Only talk about aspects relevant to this category: ${focus}. Do NOT invent specific experiences the customer did not mention; keep claims general where details are missing. Match the tone honestly to the rating — do not make a low rating sound positive. No hashtags, at most one emoji. Make each draft meaningfully different in structure and wording.
+Return ONLY the 4 drafts separated by a line containing exactly ===`;
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: { "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
@@ -686,7 +700,7 @@ export const generateReviewSuggestion = createServerFn({ method: "POST" })
         } catch { /* ignore partial */ }
       }
     }
-    text = text.trim();
-    if (!text) throw new Error("Could not write a suggestion. Please try again.");
-    return { text };
+    const drafts = text.split(/\n?\s*===\s*\n?/).map((t) => t.trim().replace(/^(draft\s*\d+[:.)-]?|\d+[.)])\s*/i, "")).filter((t) => t.length > 10).slice(0, 4);
+    if (!drafts.length) throw new Error("Could not write a suggestion. Please try again.");
+    return { text: drafts[0], drafts };
   });
