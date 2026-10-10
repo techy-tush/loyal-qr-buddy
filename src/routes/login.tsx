@@ -61,11 +61,15 @@ function LoginPage() {
         <>
           New here?{" "}
           <Link to="/signup" className="font-semibold text-primary">
-            Create your business account
+            Create an account
           </Link>
         </>
       }
     >
+      <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-sm font-semibold">
+        <span className="rounded-lg bg-background py-2 text-center shadow-sm">Business Owner</span>
+        <Link to="/customer-login" className="rounded-lg py-2 text-center text-muted-foreground">Customer / Visitor</Link>
+      </div>
       <form className="space-y-4" onSubmit={handleLogin}>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>

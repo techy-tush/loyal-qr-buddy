@@ -268,10 +268,6 @@ function CustomerPortal() {
               <div className="surface p-5 pt-0">
                 <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} category={business.category ?? ""} />
               </div>
-            ) : business.google_review_url ? (
-              <Button asChild size="lg" variant="outline" className="w-full">
-                <a href={business.google_review_url} target="_blank" rel="noopener noreferrer"><Star className="mr-2 size-4" /> Write a Google review</a>
-              </Button>
             ) : null}
 
             {/* 3–5. Social links, menu/catalog, location & contact */}
@@ -401,40 +397,6 @@ function CustomerPortal() {
             {addons.reviewWriter ? (
               <ReviewWriter customerToken={customerToken} reviewUrl={business.google_review_url} category={business.category ?? ""} />
             ) : null}
-            <div className="mt-4 grid gap-2">
-              {addons.menu ? (
-                <Button asChild variant="outline" className="h-11 justify-start">
-                  <a href={`/menu/${business.slug}`}>
-                    <UtensilsCrossed className="mr-2 size-4" /> View {catalogLabel(business.category).toLowerCase()}
-                  </a>
-                </Button>
-              ) : null}
-              {business.google_review_url ? (
-                <Button asChild variant="outline" className="h-11 justify-start">
-                  <a href={business.google_review_url} target="_blank" rel="noreferrer">
-                    <Star className="mr-2 size-4" /> Leave a Google review
-                  </a>
-                </Button>
-              ) : null}
-              {business.instagram_url ? (
-                <Button asChild variant="outline" className="h-11 justify-start">
-                  <a href={business.instagram_url} target="_blank" rel="noreferrer">
-                    <Instagram className="mr-2 size-4" /> Follow on Instagram
-                  </a>
-                </Button>
-              ) : null}
-              {business.whatsapp_number ? (
-                <Button asChild variant="outline" className="h-11 justify-start">
-                  <a
-                    href={`https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <MessageCircle className="mr-2 size-4" /> Chat on WhatsApp
-                  </a>
-                </Button>
-              ) : null}
-            </div>
           </Section>
         ) : null}
 
@@ -805,6 +767,7 @@ function ShopProfile({
   // Older single fields, if not already in the new list.
   if (!seen.has("instagram") && business.instagram_url) links.push({ href: business.instagram_url, label: "Instagram", icon: Instagram });
   if (!seen.has("facebook") && business.facebook_url) links.push({ href: business.facebook_url, label: "Facebook", icon: Facebook });
+  if (!seen.has("google_reviews") && business.google_review_url) links.push({ href: business.google_review_url, label: "Google Review", icon: Star });
   if (!seen.has("whatsapp") && business.whatsapp_number) links.push({ href: `https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}`, label: "WhatsApp", icon: MessageCircle });
   const mapsUrl =
     (seen.has("google_maps") ? null : business.google_maps_url) ||
@@ -818,7 +781,7 @@ function ShopProfile({
           <p className="text-xs font-semibold uppercase text-muted-foreground">Follow &amp; connect</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {links.map((l) => (
-              <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center text-xs font-semibold transition hover:bg-accent">
+              <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center text-xs font-semibold transition hover:bg-accent">
                 <span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><l.icon className="size-5" /></span>
                 {l.label}
               </a>

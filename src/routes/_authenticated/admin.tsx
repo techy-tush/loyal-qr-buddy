@@ -58,6 +58,8 @@ import {
   setSuperAdmin,
 } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
+import { catalogLabel } from "@/lib/validation";
+import { setBusinessCategoryAdmin } from "@/lib/admin.functions";
 import { CreateUserTab, InvoicesTab, ManageSubscriptionDialog, ManualPaymentDialog } from "@/components/app/AdminBilling";
 import { useBusiness } from "@/hooks/use-business";
 import { useNavigate } from "@tanstack/react-router";
@@ -1039,6 +1041,7 @@ function BusinessDetailDialog({ id, onClose }: { id: string | null; onClose: () 
           <Skeleton className="h-60" />
         ) : (
           <div className="space-y-5">
+            <CategoryEditor businessId={id!} current={b?.category ?? ""} onSaved={() => q.refetch()} />
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => {
@@ -1102,5 +1105,25 @@ function BusinessDetailDialog({ id, onClose }: { id: string | null; onClose: () 
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CategoryEditor({ businessId, current, onSaved }: { businessId: string; current: string; onSaved: () => void }) {
+  const save = useServerFn(setBusinessCategoryAdmin);
+  const [value, setValue] = useState(current);
+  const m = useMutation({
+    mutationFn: () => save({ data: { businessId, category: value } }),
+    onSuccess: () => { toast.success(`Category saved — shows ${catalogLabel(value)}`); onSaved(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not save"),
+  });
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="min-w-48 flex-1 space-y-1">
+        <Label htmlFor="biz-cat">Business category</Label>
+        <Input id="biz-cat" value={value} onChange={(e) => setValue(e.target.value)} />
+      </div>
+      <span className="pb-2 text-xs text-muted-foreground">Shows: {catalogLabel(value)}</span>
+      <Button variant="outline" disabled={m.isPending || value.trim() === current} onClick={() => m.mutate()}>Save</Button>
+    </div>
   );
 }

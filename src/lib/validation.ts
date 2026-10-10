@@ -47,14 +47,12 @@ export function safeHttpsUrl(v: string): string | null {
   }
 }
 
-const FOOD = /(restaurant|cafe|café|coffee|bakery|food|dhaba|sweet|juice|bar|pizza|hotel)/i;
+const FOOD = /(restaurant|cafe|café|coffee|bakery|food|dhaba|sweet|juice|pizza|qsr|fast ?food|bistro|canteen|mithai|ice ?cream|tea|chai)/i;
 export function isFoodBusiness(category: string | null | undefined) {
   return FOOD.test(category ?? "");
 }
 export function catalogLabel(category: string | null | undefined) {
-  if (isFoodBusiness(category)) return "Digital Menu";
-  if (/(retail|store|shop|furniture|boutique|electronics|mart)/i.test(category ?? "")) return "Product Catalog";
-  return "Services Catalog";
+  return isFoodBusiness(category) ? "Digital Menu" : "Digital Catalog";
 }
 
 /** All stored formats a phone may exist in (older rows were saved un-normalised). */

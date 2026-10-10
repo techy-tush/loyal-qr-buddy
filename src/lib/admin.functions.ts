@@ -497,3 +497,16 @@ export const getBusinessDetailAdmin = createServerFn({ method: "POST" })
       customers: customerRows.data ?? [],
     };
   });
+
+/** Platform admin corrects a business category; menu/catalog content is kept as-is. */
+export const setBusinessCategoryAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ businessId: z.string().uuid(), category: z.string().trim().min(2).max(60) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("businesses").update({ category: data.category }).eq("id", data.businessId);
+    if (error) throw new Error("Could not update category.");
+    await supabaseAdmin.from("audit_logs").insert({ business_id: data.businessId, actor_id: context.userId, action: "business.category_changed", entity: "businesses", entity_id: data.businessId, meta: { category: data.category } });
+    return { ok: true };
+  });
