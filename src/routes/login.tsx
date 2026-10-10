@@ -60,7 +60,7 @@ function LoginPage() {
       footer={
         <>
           New here?{" "}
-          <Link to="/signup" search={{ type: undefined }} className="font-semibold text-primary">
+          <Link to="/signup" className="font-semibold text-primary">
             Create an account
           </Link>
         </>

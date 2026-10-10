@@ -24,7 +24,7 @@ export const Route = createFileRoute("/signup")({
       { property: "og:description", content: "Launch QR loyalty for your business in minutes." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { type?: "business" | "customer" } => ({
     type: s.type === "business" || s.type === "customer" ? (s.type as "business" | "customer") : undefined,
   }),
   component: SignupPage,
