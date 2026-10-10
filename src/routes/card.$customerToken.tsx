@@ -28,6 +28,13 @@ import {
   UtensilsCrossed,
   Sparkles,
   Copy,
+  Check,
+  Youtube,
+  Users,
+  Send,
+  Twitter,
+  Linkedin,
+  Globe,
 } from "lucide-react";
 import {
   getCustomerPortal,
