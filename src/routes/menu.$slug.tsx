@@ -1,3 +1,4 @@
+import { catalogLabel } from "@/lib/validation";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -43,7 +44,7 @@ function MenuPage() {
           {business.logo_url ? <img src={business.logo_url} alt="" className="size-12 rounded-xl bg-background object-cover" /> : null}
           <div>
             <h1 className="font-display text-2xl font-bold">{business.name}</h1>
-            <p className="text-sm opacity-80">Menu{business.city ? ` · ${business.city}` : ""}</p>
+            <p className="text-sm opacity-80">{catalogLabel(business.category)}{business.city ? ` · ${business.city}` : ""}</p>
           </div>
         </div>
       </header>
@@ -61,17 +62,20 @@ function MenuPage() {
                 <li key={i.id} className={`surface flex gap-3 p-3 ${i.is_available ? "" : "opacity-50"}`}>
                   {i.image_url ? <img src={i.image_url} alt={i.name} loading="lazy" className="size-16 rounded-xl object-cover" /> : null}
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{i.name}</p>
+                    <p className="font-semibold">{i.name}{i.dietary_label ? <span className="ml-2 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">{i.dietary_label}</span> : null}</p>
                     {i.description ? <p className="text-xs text-muted-foreground">{i.description}</p> : null}
                     {!i.is_available ? <p className="mt-1 text-xs font-semibold text-destructive">Not available today</p> : null}
+                    {i.enquiry_enabled && business.whatsapp_number ? (
+                      <a className="mt-1 inline-block text-xs font-semibold text-primary underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${business.whatsapp_number.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hi, I'd like to know more about ${i.name}`)}`}>Enquire on WhatsApp</a>
+                    ) : null}
                   </div>
-                  <span className="font-bold text-primary">₹{Number(i.price)}</span>
+                  {Number(i.price) > 0 ? <span className="font-bold text-primary">₹{Number(i.price)}</span> : null}
                 </li>
               ))}
             </ul>
           </section>
         ))}
-        {categories.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">Menu coming soon.</p> : null}
+        {categories.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">Coming soon.</p> : null}
       </main>
     </div>
   );
