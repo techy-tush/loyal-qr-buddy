@@ -45,6 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BusinessProvider, useBusiness } from "@/hooks/use-business";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { catalogLabel } from "@/lib/validation";
 
 type NavItem = { to: string; label: string; icon: typeof Users; roles?: string[] };
 
@@ -90,7 +91,9 @@ function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
 
-  const visibleNav = navItems.filter((i) => !i.roles || (role && i.roles.includes(role)));
+  const visibleNav = navItems
+    .filter((i) => !i.roles || (role && i.roles.includes(role)))
+    .map((i) => (i.to === "/menu-builder" ? { ...i, label: catalogLabel(business?.category) } : i));
 
   async function signOut() {
     await queryClient.cancelQueries();
