@@ -9,10 +9,10 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "₹699 for 6 months or ₹999 for 12 months, plus multi-branch plans for QR loyalty, rewards and customer CRM. Every business starts with a 3 day free trial.",
+          "₹699 for 6 months or ₹999 for 12 months, plus multi-branch plans for QR loyalty, rewards and customer CRM.",
       },
       { property: "og:title", content: "Pricing | Digital Udyam" },
-      { property: "og:description", content: "Plans that grow with your business. 3 day free trial." },
+      { property: "og:description", content: "₹699 for 6 months or ₹999 for 12 months." },
     ],
   }),
   component: PricingPage,
@@ -24,7 +24,7 @@ function PricingPage() {
       <PageHero
         eyebrow="Pricing"
         title="Plans that grow with your business"
-        subtitle="Every plan starts with a 3 day free trial. No credit card required."
+        subtitle="Pay by UPI. Your plan starts as soon as the payment is verified."
       />
       <section className="mx-auto max-w-6xl px-4 py-16">
         <PlanGrid />

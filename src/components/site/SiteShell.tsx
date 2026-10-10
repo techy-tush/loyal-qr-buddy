@@ -45,7 +45,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   <Link to="/login">Log in</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/signup">Start free trial</Link>
+                  <Link to="/signup">Get started</Link>
                 </Button>
               </>
             )}
@@ -78,7 +78,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                         <Link to="/login">Log in</Link>
                       </Button>
                       <Button asChild>
-                        <Link to="/signup">Start free trial</Link>
+                        <Link to="/signup">Get started</Link>
                       </Button>
                     </>
                   )}

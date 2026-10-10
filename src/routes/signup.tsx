@@ -11,13 +11,13 @@ import { lovable } from "@/integrations/lovable/index";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Start your free trial | Digital Udyam" },
+      { title: "Create your business account | Digital Udyam" },
       {
         name: "description",
         content:
-          "Create your Digital Udyam business account and launch QR loyalty in minutes. 3 day free trial, no credit card.",
+          "Create your Digital Udyam business account and launch QR loyalty in minutes. Plans from ₹699 for 6 months.",
       },
-      { property: "og:title", content: "Start your free trial | Digital Udyam" },
+      { property: "og:title", content: "Create your business account | Digital Udyam" },
       { property: "og:description", content: "Launch QR loyalty for your business in minutes." },
     ],
   }),

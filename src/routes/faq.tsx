@@ -30,7 +30,7 @@ const faqs = [
   { q: "What happens when a card is complete?", a: "A reward is created automatically with a unique code and an expiry date. Staff enters the code to redeem it, and it can only be redeemed once." },
   { q: "Can I collect customer feedback?", a: "Yes. Customers can rate their visit and leave a comment, and you can link your Google review page, Instagram and WhatsApp." },
   { q: "Is my customer data isolated from other businesses?", a: "Yes. Every record is tied to your business and protected by row level security, so no other business can ever read or change your data." },
-  { q: "How long is the free trial?", a: "Three days, with no credit card. You can upgrade or cancel at any time from the Subscription page." },
+  { q: "Is there a free trial?", a: "No. Choose a 6-month or 12-month plan and pay by UPI; your plan starts once payment is verified." },
   { q: "Which payment providers are supported?", a: "The platform is built with a payment abstraction for Razorpay and Stripe. Card details are never stored by Digital Udyam." },
 ];
 

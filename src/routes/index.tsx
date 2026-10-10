@@ -61,7 +61,7 @@ const faqs = [
   { q: "Do my customers need to download an app?", a: "No. They scan your QR code and get a digital loyalty card in their mobile browser." },
   { q: "Can I use it across multiple outlets?", a: "Yes. Add branches, each with its own QR code, staff and analytics." },
   { q: "How are stamps protected from misuse?", a: "Stamps are validated on our servers with cooldowns, daily limits and staff authorisation, plus a full audit log." },
-  { q: "Is there a free trial?", a: "Yes — every business starts with a 3 day free trial. No card needed." },
+  { q: "How do I start?", a: "Create your account, choose the 6-month (₹699) or 12-month (₹999) plan and pay by UPI. Your plan starts once payment is verified." },
 ];
 
 function Landing() {
@@ -84,7 +84,7 @@ function Landing() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" asChild>
                 <Link to="/signup">
-                  Start free trial <ArrowRight className="ml-1 size-4" />
+                  Get started <ArrowRight className="ml-1 size-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
@@ -92,7 +92,7 @@ function Landing() {
               </Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              3 day free trial · No credit card · Cafes, salons, gyms, retail & more
+              ₹699 for 6 months · Cafes, salons, gyms, retail & more
             </p>
           </div>
           <div className="relative">
@@ -214,7 +214,7 @@ function Landing() {
             Set up your loyalty program and print your first QR code today.
           </p>
           <Button size="lg" className="mt-7" asChild>
-            <Link to="/signup">Start your free trial</Link>
+            <Link to="/signup">Get started</Link>
           </Button>
         </div>
       </section>
