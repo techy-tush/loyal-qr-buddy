@@ -20,6 +20,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedAddonsRouteImport } from './routes/_authenticated/addons'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
@@ -27,6 +28,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
+import { Route as AuthenticatedMenuBuilderRouteImport } from './routes/_authenticated/menu-builder'
 import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
@@ -38,6 +40,7 @@ import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStampRouteImport } from './routes/_authenticated/stamp'
 import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
 import { Route as CardCustomerTokenRouteImport } from './routes/card.$customerToken'
+import { Route as MenuSlugRouteImport } from './routes/menu.$slug'
 import { Route as QrTokenRouteImport } from './routes/qr.$token'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
@@ -97,6 +100,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAddonsRoute = AuthenticatedAddonsRouteImport.update({
+  id: '/addons',
+  path: '/addons',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -132,6 +140,12 @@ const AuthenticatedLoyaltyRoute = AuthenticatedLoyaltyRouteImport.update({
   path: '/loyalty',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMenuBuilderRoute =
+  AuthenticatedMenuBuilderRouteImport.update({
+    id: '/menu-builder',
+    path: '/menu-builder',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOffersRoute = AuthenticatedOffersRouteImport.update({
   id: '/offers',
   path: '/offers',
@@ -189,6 +203,11 @@ const CardCustomerTokenRoute = CardCustomerTokenRouteImport.update({
   path: '/card/$customerToken',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MenuSlugRoute = MenuSlugRouteImport.update({
+  id: '/menu/$slug',
+  path: '/menu/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QrTokenRoute = QrTokenRouteImport.update({
   id: '/qr/$token',
   path: '/qr/$token',
@@ -224,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/addons': typeof AuthenticatedAddonsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/campaigns': typeof AuthenticatedCampaignsRoute
@@ -231,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/menu-builder': typeof AuthenticatedMenuBuilderRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
@@ -242,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/stamp': typeof AuthenticatedStampRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
+  '/menu/$slug': typeof MenuSlugRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -258,6 +280,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/addons': typeof AuthenticatedAddonsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/campaigns': typeof AuthenticatedCampaignsRoute
@@ -265,6 +288,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/menu-builder': typeof AuthenticatedMenuBuilderRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/qr-codes': typeof AuthenticatedQrCodesRoute
@@ -276,6 +300,7 @@ export interface FileRoutesByTo {
   '/stamp': typeof AuthenticatedStampRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
+  '/menu/$slug': typeof MenuSlugRoute
   '/qr/$token': typeof QrTokenRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -294,6 +319,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/addons': typeof AuthenticatedAddonsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/campaigns': typeof AuthenticatedCampaignsRoute
@@ -301,6 +327,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
+  '/_authenticated/menu-builder': typeof AuthenticatedMenuBuilderRoute
   '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
@@ -312,6 +339,7 @@ export interface FileRoutesById {
   '/_authenticated/stamp': typeof AuthenticatedStampRoute
   '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
   '/card/$customerToken': typeof CardCustomerTokenRoute
+  '/menu/$slug': typeof MenuSlugRoute
   '/qr/$token': typeof QrTokenRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -330,6 +358,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/addons'
     | '/admin'
     | '/branches'
     | '/campaigns'
@@ -337,6 +366,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feedback'
     | '/loyalty'
+    | '/menu-builder'
     | '/offers'
     | '/onboarding'
     | '/qr-codes'
@@ -348,6 +378,7 @@ export interface FileRouteTypes {
     | '/stamp'
     | '/subscription'
     | '/card/$customerToken'
+    | '/menu/$slug'
     | '/qr/$token'
     | '/customers/$customerId'
     | '/api/public/razorpay-webhook'
@@ -364,6 +395,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/addons'
     | '/admin'
     | '/branches'
     | '/campaigns'
@@ -371,6 +403,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feedback'
     | '/loyalty'
+    | '/menu-builder'
     | '/offers'
     | '/onboarding'
     | '/qr-codes'
@@ -382,6 +415,7 @@ export interface FileRouteTypes {
     | '/stamp'
     | '/subscription'
     | '/card/$customerToken'
+    | '/menu/$slug'
     | '/qr/$token'
     | '/customers/$customerId'
     | '/api/public/razorpay-webhook'
@@ -399,6 +433,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/_authenticated/addons'
     | '/_authenticated/admin'
     | '/_authenticated/branches'
     | '/_authenticated/campaigns'
@@ -406,6 +441,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/feedback'
     | '/_authenticated/loyalty'
+    | '/_authenticated/menu-builder'
     | '/_authenticated/offers'
     | '/_authenticated/onboarding'
     | '/_authenticated/qr-codes'
@@ -417,6 +453,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stamp'
     | '/_authenticated/subscription'
     | '/card/$customerToken'
+    | '/menu/$slug'
     | '/qr/$token'
     | '/_authenticated/customers/$customerId'
     | '/api/public/razorpay-webhook'
@@ -436,6 +473,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   CardCustomerTokenRoute: typeof CardCustomerTokenRoute
+  MenuSlugRoute: typeof MenuSlugRoute
   QrTokenRoute: typeof QrTokenRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicHooksAutomationRoute: typeof ApiPublicHooksAutomationRoute
@@ -520,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/addons': {
+      id: '/_authenticated/addons'
+      path: '/addons'
+      fullPath: '/addons'
+      preLoaderRoute: typeof AuthenticatedAddonsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -567,6 +612,13 @@ declare module '@tanstack/react-router' {
       path: '/loyalty'
       fullPath: '/loyalty'
       preLoaderRoute: typeof AuthenticatedLoyaltyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/menu-builder': {
+      id: '/_authenticated/menu-builder'
+      path: '/menu-builder'
+      fullPath: '/menu-builder'
+      preLoaderRoute: typeof AuthenticatedMenuBuilderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/offers': {
@@ -646,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CardCustomerTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/menu/$slug': {
+      id: '/menu/$slug'
+      path: '/menu/$slug'
+      fullPath: '/menu/$slug'
+      preLoaderRoute: typeof MenuSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/qr/$token': {
       id: '/qr/$token'
       path: '/qr/$token'
@@ -693,6 +752,7 @@ const AuthenticatedCustomersRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAddonsRoute: typeof AuthenticatedAddonsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRoute
@@ -700,6 +760,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
+  AuthenticatedMenuBuilderRoute: typeof AuthenticatedMenuBuilderRoute
   AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedQrCodesRoute: typeof AuthenticatedQrCodesRoute
@@ -713,6 +774,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAddonsRoute: AuthenticatedAddonsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCampaignsRoute: AuthenticatedCampaignsRoute,
@@ -720,6 +782,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
+  AuthenticatedMenuBuilderRoute: AuthenticatedMenuBuilderRoute,
   AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedQrCodesRoute: AuthenticatedQrCodesRoute,
@@ -748,6 +811,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   CardCustomerTokenRoute: CardCustomerTokenRoute,
+  MenuSlugRoute: MenuSlugRoute,
   QrTokenRoute: QrTokenRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicHooksAutomationRoute: ApiPublicHooksAutomationRoute,
