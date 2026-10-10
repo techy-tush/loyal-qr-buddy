@@ -260,3 +260,30 @@ export const submitUpiReference = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Start a UPI payment for an add-on (₹/year). Activated after the platform team confirms. */
+export const startAddonPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ businessId: z.string().uuid(), addonCode: z.enum(["REVIEW_WRITER", "DIGITAL_MENU"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("is_business_admin", { _business_id: data.businessId });
+    if (!isAdmin) throw new Error("Only the business owner can buy add-ons.");
+    const { data: addon } = await context.supabase
+      .from("addons").select("code, name, price_yearly, is_active").eq("code", data.addonCode).maybeSingle();
+    if (!addon || !addon.is_active) throw new Error("This add-on is not available.");
+    const amount = Number(addon.price_yearly);
+    const { data: settings } = await context.supabase.from("platform_settings").select("key, value");
+    const upiId = settings?.find((s) => s.key === "upi_id")?.value?.trim();
+    const payee = settings?.find((s) => s.key === "upi_payee_name")?.value?.trim() || "Digital Udyam";
+    if (!upiId) throw new Error("UPI payments are not set up yet. Please contact the platform team.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: payment, error } = await supabaseAdmin
+      .from("payments")
+      .insert({ business_id: data.businessId, amount, currency: "INR", provider: "upi", status: "PENDING", addon_code: addon.code, cycle: "YEARLY" })
+      .select("id").single();
+    if (error) throw new Error(error.message);
+    const params = new URLSearchParams({ pa: upiId, pn: payee, am: amount.toFixed(2), cu: "INR", tn: `${addon.name} ${payment.id.slice(0, 8)}`, tr: payment.id.slice(0, 20) });
+    return { paymentId: payment.id, amount, planName: addon.name, upiId, payee, upiUrl: `upi://pay?${params.toString()}` };
+  });
