@@ -57,7 +57,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("status, trial_ends_at, plans(name)")
+        .select("status, trial_ends_at, current_period_end, plans(name)")
         .eq("business_id", businessId ?? "")
         .maybeSingle();
       if (error) throw error;
@@ -67,19 +67,19 @@ function DashboardPage() {
 
   if (!business) return null;
 
-  const trialDays = subscription.data?.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(subscription.data.trial_ends_at).getTime() - Date.now()) / 86400000))
-    : null;
+  const sd = subscription.data;
+  const until = sd?.status === "TRIAL" ? sd?.trial_ends_at : sd?.current_period_end;
+  const planLive = Boolean(sd && ["TRIAL", "ACTIVE", "CANCELLED"].includes(sd.status) && until && new Date(until) > new Date());
   const plan = Array.isArray(subscription.data?.plans) ? subscription.data.plans[0]?.name : subscription.data?.plans?.name;
   const summary = metrics.data;
 
   return (
     <>
       <section className="dashboard-hero overflow-hidden rounded-lg px-4 py-5 shadow-lift md:px-6 md:py-6">
-        {subscription.data?.status === "TRIAL" ? (
+        {subscription.isSuccess && !planLive ? (
           <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-card/20 bg-card/10 p-3">
-            <div className="flex min-w-0 items-center gap-2 text-xs font-semibold"><Clock3 className="size-4 shrink-0 text-sidebar-primary" /><span className="truncate">Free trial · {trialDays ?? 0} days remaining</span></div>
-            <Button asChild size="sm" variant="secondary"><Link to="/subscription">Upgrade</Link></Button>
+            <div className="flex min-w-0 items-center gap-2 text-xs font-semibold"><Clock3 className="size-4 shrink-0 text-sidebar-primary" /><span className="truncate">{sd?.status === "PAST_DUE" && !sd?.current_period_end ? "Payment pending — choose a plan to activate" : "Plan expired — renew to keep approving visits"}</span></div>
+            <Button asChild size="sm" variant="secondary"><Link to="/subscription">Pay now</Link></Button>
           </div>
         ) : null}
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
