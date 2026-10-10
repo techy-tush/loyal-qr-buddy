@@ -433,6 +433,9 @@ export const requestVisit = createServerFn({ method: "POST" })
       .eq("access_token", data.customerToken)
       .maybeSingle();
     if (!customer) throw new Error("Loyalty card not found.");
+    const { nextVisitAt } = await import("@/lib/stamp.server");
+    const next = await nextVisitAt(customer.id);
+    if (next) throw new Error("Your next visit is not available yet. Please come back after 24 hours.");
     const { data: pending } = await db
       .from("visit_requests")
       .select("id, status, created_at")
@@ -465,7 +468,9 @@ export const getVisitStatus = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    return last ?? null;
+    const { nextVisitAt } = await import("@/lib/stamp.server");
+    const next_visit_at = await nextVisitAt(customer.id);
+    return last ? { ...last, next_visit_at } : { id: null, status: null, created_at: null, decided_at: null, next_visit_at };
   });
 
 export const updateCustomerProfile = createServerFn({ method: "POST" })

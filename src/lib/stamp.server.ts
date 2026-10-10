@@ -8,6 +8,23 @@ export type IssueStampInput = {
   actorId: string | null;
 };
 
+/** Mandatory gap between two counted visits at the same shop. */
+export const VISIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+/** When the customer's next visit becomes claimable (null = eligible now). */
+export async function nextVisitAt(customerId: string): Promise<string | null> {
+  const { data } = await db
+    .from("stamp_events")
+    .select("created_at")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const next = new Date(data.created_at).getTime() + VISIT_COOLDOWN_MS;
+  return next > Date.now() ? new Date(next).toISOString() : null;
+}
+
 /**
  * Server-only stamp engine. Never trust a client-supplied stamp count:
  * cooldown, daily limit, reward creation and audit logging all happen here.
@@ -28,9 +45,7 @@ export async function issueStampCore(input: IssueStampInput) {
   if (!customer || customer.business_id !== input.businessId)
     throw new Error("This customer does not belong to this business.");
 
-  const cooldownFrom = new Date(
-    Date.now() - (business.stamp_cooldown_minutes ?? 0) * 60000,
-  ).toISOString();
+  const cooldownFrom = new Date(Date.now() - VISIT_COOLDOWN_MS).toISOString();
   const { data: recent } = await db
     .from("stamp_events")
     .select("id")
@@ -39,7 +54,7 @@ export async function issueStampCore(input: IssueStampInput) {
     .limit(1);
   if (recent && recent.length > 0)
     throw new Error(
-      `A stamp was already issued in the last ${business.stamp_cooldown_minutes} minutes.`,
+      "A visit was already recorded in the last 24 hours. The next visit opens 24 hours after the last one.",
     );
 
   const dayStart = new Date();
