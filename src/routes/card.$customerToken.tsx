@@ -482,11 +482,17 @@ function VisitRequestPanel({ customerToken, onDecided }: { customerToken: string
   const last = status.data;
   const [seenDecision, setSeenDecision] = useState<string | null>(null);
   useEffect(() => {
-    if (last && last.status !== "PENDING" && last.id !== seenDecision) {
+    if (last?.id && last.status !== "PENDING" && last.id !== seenDecision) {
       setSeenDecision(last.id);
       onDecided();
     }
   }, [last, seenDecision, onDecided]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!last?.next_visit_at) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [last?.next_visit_at]);
   const send = useMutation({
     mutationFn: () => requestFn({ data: { customerToken } }),
     onSuccess: () => {
@@ -495,7 +501,8 @@ function VisitRequestPanel({ customerToken, onDecided }: { customerToken: string
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const recent = last && Date.now() - new Date(last.decided_at ?? last.created_at).getTime() < 6 * 3600000;
+  const recent = last?.created_at && Date.now() - new Date(last.decided_at ?? last.created_at).getTime() < 6 * 3600000;
+  const waitMs = last?.next_visit_at ? new Date(last.next_visit_at).getTime() - now : 0;
 
   if (last?.status === "PENDING")
     return (
@@ -515,9 +522,24 @@ function VisitRequestPanel({ customerToken, onDecided }: { customerToken: string
           <XCircle className="size-4" /> Your last request was rejected
         </p>
       ) : null}
-      <Button className="h-12 w-full text-base" onClick={() => send.mutate()} disabled={send.isPending}>
-        {send.isPending ? "Sending…" : "I'm here — request visit"}
-      </Button>
+      {waitMs > 0 ? (
+        <div className="rounded-xl border border-border bg-muted/40 p-4 text-center">
+          <p className="flex items-center justify-center gap-2 text-sm font-semibold">
+            <Clock3 className="size-4 text-primary" /> Next visit not available yet
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your next visit will be available in {Math.floor(waitMs / 3600000)} hours and{" "}
+            {Math.ceil((waitMs % 3600000) / 60000)} minutes. Visits count once every 24 hours.
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="text-center text-sm font-semibold text-primary">Visit available — apply now</p>
+          <Button className="h-12 w-full text-base" onClick={() => send.mutate()} disabled={send.isPending}>
+            {send.isPending ? "Sending…" : "Apply now — I'm here"}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
