@@ -56,3 +56,11 @@ export function catalogLabel(category: string | null | undefined) {
   if (/(retail|store|shop|furniture|boutique|electronics|mart)/i.test(category ?? "")) return "Product Catalog";
   return "Services Catalog";
 }
+
+/** All stored formats a phone may exist in (older rows were saved un-normalised). */
+export function phoneVariants(raw: string): string[] {
+  const n = normalizeIndianPhone(raw);
+  if (!n) return [String(raw).trim()];
+  const ten = n.slice(3);
+  return [n, ten, `91${ten}`, `0${ten}`, String(raw).trim()];
+}
