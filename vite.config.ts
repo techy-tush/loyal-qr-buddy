@@ -23,6 +23,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    preset: "node-server",
+    // Netlify sets NETLIFY=true during builds; keep node-server for Docker/local `start`.
+    preset: process.env.NETLIFY ? "netlify" : "node-server",
   },
 });
