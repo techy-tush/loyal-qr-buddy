@@ -51,8 +51,9 @@ export const loginCustomerByPhone = createServerFn({ method: "POST" })
       .in("phone", phoneVariants(data.phone))
       .order("last_visit_at", { ascending: false, nullsFirst: false })
       .limit(20);
-    if (!rows?.length) return { status: "not_registered" as const };
-    return { status: "ok" as const, customerToken: rows[0].access_token as string };
+    const token = rows?.[0]?.access_token;
+    if (!token) return { status: "not_registered" as const };
+    return { status: "ok" as const, customerToken: token };
   });
 
 /**
