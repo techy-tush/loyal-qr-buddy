@@ -3,3 +3,8 @@
   command = "bun install && bun run build"
   # Nitro's netlify preset writes static assets here (server goes to .netlify/functions-internal).
   publish = "dist"
+
+[build.environment]
+  # Supabase URL and publishable (anon) key are public by design and get inlined into the
+  # client bundle. SUPABASE_SERVICE_ROLE_KEY is deliberately NOT listed so it stays scanned.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,VITE_SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PUBLISHABLE_KEY,SUPABASE_PROJECT_ID,VITE_SUPABASE_PROJECT_ID"
