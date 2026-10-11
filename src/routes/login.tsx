@@ -95,12 +95,7 @@ function LoginPage() {
           {busy ? "Logging in…" : "Log in"}
         </Button>
       </form>
-      <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-      </div>
-      <Button variant="outline" className="w-full" onClick={handleGoogle}>
-        Continue with Google
-      </Button>
+      {/* Google sign-in disabled for now; re-enable later via handleGoogle. */}
       <div className="mt-5 text-center">
         <Link to="/forgot-password" className="text-xs text-muted-foreground underline">
           Forgot your password?
