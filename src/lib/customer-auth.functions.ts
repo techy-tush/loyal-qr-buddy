@@ -37,6 +37,25 @@ function siteOrigin() {
 }
 
 /**
+ * Customer login by mobile number — no email verification. Returns the customer's
+ * shop card token directly so they land on their account in one step.
+ */
+export const loginCustomerByPhone = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ phone: z.string().trim().min(10).max(15) }).parse(d))
+  .handler(async ({ data }) => {
+    if (!normalizeIndianPhone(data.phone)) return { status: "invalid" as const };
+    const db = await admin();
+    const { data: rows } = await db
+      .from("customers")
+      .select("access_token, last_visit_at")
+      .in("phone", phoneVariants(data.phone))
+      .order("last_visit_at", { ascending: false, nullsFirst: false })
+      .limit(20);
+    if (!rows?.length) return { status: "not_registered" as const };
+    return { status: "ok" as const, customerToken: rows[0].access_token as string };
+  });
+
+/**
  * Step 1 of customer login: find the registered customer and email a secure sign-in link.
  * Entering a phone/email alone never signs anyone in — only the emailed link does.
  */
