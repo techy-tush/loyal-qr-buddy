@@ -1,14 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/digital-udyam-logo.png.asset.json";
 
 export function Logo({ className, to = "/" }: { className?: string; to?: string }) {
   return (
-    <Link to={to} className={cn("flex items-center gap-2.5", className)}>
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
-        <QrCode className="size-5" />
-      </span>
-      <span className="font-display text-lg font-extrabold tracking-tight">Digital Udyam</span>
+    <Link to={to} className={cn("flex items-center", className)}>
+      <img src={logoAsset.url} alt="Digital Udyam" className="h-9 w-auto rounded-lg bg-white px-1.5 py-0.5" />
     </Link>
   );
 }
